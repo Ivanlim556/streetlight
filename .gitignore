@@ -1,0 +1,7 @@
+# Never commit credentials, no matter how they get named
+sa-key.json
+gcp-service-account.json
+*key*.json
+*credential*.json
+*.pem
+node_modules/

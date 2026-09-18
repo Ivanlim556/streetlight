@@ -1,0 +1,13 @@
+[Unit]
+Description=Street Light Sensor Publisher
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=/home/pi
+ExecStart=/usr/bin/python3 /home/pi/streetlight_sensors.py
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target
