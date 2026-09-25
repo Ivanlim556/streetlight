@@ -1,0 +1,58 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Node-RED Flow — Smart Streetlight",
+    "quality_profile": "showcase",
+    "output": "nodered-flow-chart.html"
+  },
+  "lanes": [
+    { "id": "ingest", "label": "Sensor Ingestion (MQTT to Node-RED)" },
+    { "id": "automation", "label": "3-Second Dim-Command Automation Loop" }
+  ],
+  "mainPath": ["trigger", "device_level", "rbe", "send_dimto", "check_status", "status_result"],
+  "nodes": [
+    { "id": "mqtt_in", "lane": "ingest", "col": 0, "type": "messagebus", "label": "MQTT In", "sublabel": "streetlight/1/#", "width": 132 },
+    { "id": "topic_switch", "lane": "ingest", "col": 1, "type": "backend", "label": "Topic Switch", "sublabel": "route by topic", "width": 132 },
+    { "id": "store_readings", "lane": "ingest", "col": 2, "type": "backend", "label": "Store Readings", "sublabel": "lux + motion state", "width": 132 },
+    { "id": "dashboard", "lane": "ingest", "col": 3, "type": "frontend", "label": "Dashboard", "sublabel": "gauges + chart", "width": 132 },
+    { "id": "gims", "lane": "ingest", "col": 5, "type": "cloud", "label": "GIMS", "sublabel": "gims-api Cloud Run", "width": 132 },
+    { "id": "trigger", "lane": "automation", "col": 0, "type": "backend", "label": "Inject", "sublabel": "every 3s", "width": 132 },
+    { "id": "device_level", "lane": "automation", "col": 1, "type": "backend", "label": "Device Level", "sublabel": "10/100/50/30 by lux+motion", "width": 132 },
+    { "id": "rbe", "lane": "automation", "col": 2, "type": "backend", "label": "RBE", "sublabel": "only on change", "width": 132 },
+    { "id": "send_dimto", "lane": "automation", "col": 3, "type": "external", "label": "Send dimTo", "sublabel": "POST /api/v1/commands", "width": 132 },
+    { "id": "check_status", "lane": "automation", "col": 4, "type": "external", "label": "Check Status", "sublabel": "GET /api/v1/commands/{id}", "width": 132 },
+    { "id": "status_result", "lane": "automation", "col": 5, "type": "backend", "label": "Status Result", "sublabel": "switch to debug", "width": 132 }
+  ],
+  "edges": [
+    { "id": "mqtt-switch", "from": "mqtt_in", "to": "topic_switch", "variant": "default" },
+    { "id": "switch-store", "from": "topic_switch", "to": "store_readings", "label": "lux, motion topics", "variant": "default", "role": "branch" },
+    { "id": "switch-dashboard", "from": "topic_switch", "to": "dashboard", "label": "all topics", "variant": "default", "role": "branch" },
+    { "id": "store-devicelevel", "from": "store_readings", "to": "device_level", "label": "reads flow context", "variant": "dashed", "role": "async" },
+    { "id": "trigger-devicelevel", "from": "trigger", "to": "device_level", "variant": "emphasis", "role": "main" },
+    { "id": "devicelevel-rbe", "from": "device_level", "to": "rbe", "variant": "emphasis", "role": "main" },
+    { "id": "rbe-senddimto", "from": "rbe", "to": "send_dimto", "label": "level changed", "variant": "emphasis", "role": "main" },
+    { "id": "senddimto-checkstatus", "from": "send_dimto", "to": "check_status", "label": "after 2s delay", "variant": "emphasis", "role": "main" },
+    { "id": "senddimto-gims", "from": "send_dimto", "to": "gims", "label": "dimTo command", "variant": "default", "role": "branch" },
+    { "id": "gims-checkstatus", "from": "gims", "to": "check_status", "label": "command id", "variant": "default", "role": "return" },
+    { "id": "checkstatus-result", "from": "check_status", "to": "status_result", "variant": "emphasis", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Cadence",
+      "items": [
+        "MQTT ingestion is continuous — every sensor publish updates the dashboard and flow context",
+        "The dim-decision loop runs every 3 seconds but only sends a command when the level actually changes (RBE)"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Auth",
+      "items": [
+        "Every GIMS call reuses one cached GoogleAuth instance per function node",
+        "Same service account (sa-key.json) and ID-token pattern used for both commands and telemetry"
+      ]
+    }
+  ]
+}

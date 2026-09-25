@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Smart Street Light System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg:#f6f4ef; --surface:#ffffff; --surface-2:#efece4;
+    --ink:#20242c; --ink-soft:#565d69; --ink-faint:#878d98;
+    --line:#e0dcd1; --line-soft:#ebe8e0;
+    --accent:#d97706; --accent-ink:#8a4c05; --slate:#3f5468;
+    --ok:#2f855a; --ok-bg:#e6f2ea; --warn:#b7791f; --warn-bg:#f6eed9;
+    --crit:#c0392b; --crit-bg:#f7e6e3;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+    --body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+    --disp:"Archivo",var(--body);
+    --maxw:960px;
+  }
+  :root:not([data-theme="light"]) { @media (prefers-color-scheme: dark) {
+    --bg:#16181d; --surface:#1e222a; --surface-2:#262b34;
+    --ink:#e9eaed; --ink-soft:#a6adba; --ink-faint:#737b88;
+    --line:#333a45; --line-soft:#282e37;
+    --accent:#f0a13a; --accent-ink:#f6c079; --slate:#8fa9c0;
+    --ok:#6ee7a8; --ok-bg:#16302370; --warn:#ecc06a; --warn-bg:#33290f70;
+    --crit:#f0928a; --crit-bg:#3a1c1870;
+  }}
+  :root[data-theme="dark"] {
+    --bg:#16181d; --surface:#1e222a; --surface-2:#262b34;
+    --ink:#e9eaed; --ink-soft:#a6adba; --ink-faint:#737b88;
+    --line:#333a45; --line-soft:#282e37;
+    --accent:#f0a13a; --accent-ink:#f6c079; --slate:#8fa9c0;
+    --ok:#6ee7a8; --ok-bg:#16302370; --warn:#ecc06a; --warn-bg:#33290f70;
+    --crit:#f0928a; --crit-bg:#3a1c1870;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--body);
+    font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:var(--maxw); margin:0 auto; padding:0 24px; }
+
+  header { border-bottom:1px solid var(--line);
+    background:radial-gradient(120% 140% at 88% -20%, color-mix(in srgb,var(--accent) 14%, transparent), transparent 60%), var(--surface); }
+  .head-inner { padding:44px 24px 32px; max-width:var(--maxw); margin:0 auto; }
+  .eyebrow { font-family:var(--mono); font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--accent-ink); display:flex; align-items:center; gap:9px; margin:0 0 14px; }
+  .eyebrow::before { content:""; width:22px; height:2px; background:var(--accent); }
+  h1 { font-family:var(--disp); font-weight:800; font-size:clamp(28px,5vw,44px); line-height:1.05;
+    letter-spacing:-.02em; margin:0 0 10px; text-wrap:balance; }
+  .sub { font-size:17px; color:var(--ink-soft); margin:0 0 24px; max-width:62ch; }
+  .meta { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1px;
+    background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .meta div { background:var(--surface); padding:11px 14px; }
+  .meta dt { font-family:var(--mono); font-size:10.5px; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--ink-faint); margin:0 0 3px; }
+  .meta dd { margin:0; font-size:14px; font-weight:600; font-family:var(--mono); }
+
+  main { padding:8px 0 64px; }
+  section { padding:42px 0 4px; }
+  .s-head { display:flex; align-items:baseline; gap:12px; margin-bottom:6px; }
+  .s-num { font-family:var(--mono); font-size:13px; color:var(--accent); font-weight:500; padding-top:4px; }
+  h2 { font-family:var(--disp); font-weight:700; font-size:clamp(20px,3vw,27px); letter-spacing:-.01em;
+    margin:0; text-wrap:balance; }
+  .lede { color:var(--ink-soft); margin:4px 0 22px; max-width:70ch; }
+  h3 { font-family:var(--disp); font-weight:600; font-size:16px; margin:26px 0 10px; }
+  p { max-width:74ch; }
+  a { color:var(--accent-ink); text-underline-offset:2px; }
+
+  .pill { display:inline-flex; align-items:center; gap:5px; font-family:var(--mono); font-size:11px;
+    font-weight:500; letter-spacing:.03em; padding:2px 9px; border-radius:100px; border:1px solid transparent; white-space:nowrap; }
+  .pill.ok { color:var(--ok); background:var(--ok-bg); border-color:color-mix(in srgb,var(--ok) 30%,transparent); }
+  .pill.dot::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin:8px 0 4px; }
+  .stat { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px; position:relative; overflow:hidden; }
+  .stat::before { content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--accent); }
+  .stat .n { font-family:var(--disp); font-weight:800; font-size:26px; line-height:1; letter-spacing:-.02em; }
+  .stat .l { color:var(--ink-soft); font-size:13.5px; margin-top:7px; }
+
+  .tbl-wrap { overflow-x:auto; border:1px solid var(--line); border-radius:12px; margin:6px 0 8px; }
+  table { border-collapse:collapse; width:100%; font-size:14px; min-width:480px; }
+  thead th { background:var(--surface-2); text-align:left; font-family:var(--mono); font-size:11px;
+    letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); font-weight:500; padding:11px 14px; white-space:nowrap; }
+  tbody td { padding:10px 14px; border-top:1px solid var(--line-soft); vertical-align:top; }
+  tbody tr:nth-child(even) td { background:color-mix(in srgb,var(--surface-2) 45%,transparent); }
+  .mono { font-family:var(--mono); font-variant-numeric:tabular-nums; }
+  td .id { color:var(--accent-ink); font-family:var(--mono); font-size:13px; }
+
+  /* flow diagram */
+  .flow { display:flex; flex-wrap:wrap; align-items:stretch; gap:8px; margin:14px 0; }
+  .node { flex:1 1 120px; background:var(--surface); border:1px solid var(--line); border-radius:10px;
+    padding:13px 12px; text-align:center; min-width:110px; }
+  .node .t { font-family:var(--disp); font-weight:600; font-size:13.5px; }
+  .node .d { font-size:11.5px; color:var(--ink-faint); margin-top:3px; font-family:var(--mono); }
+  .node.pi { border-color:var(--accent); box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent); }
+  .node.cloud { border-style:dashed; }
+  .arrow { align-self:center; color:var(--ink-faint); font-family:var(--mono); font-size:18px; }
+  .looptag { font-family:var(--mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--slate); margin:16px 0 2px; font-weight:500; }
+
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; margin:8px 0; }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:17px 18px; }
+  .card h4 { font-family:var(--disp); font-size:14.5px; font-weight:600; margin:0 0 6px; }
+  .card p { font-size:14px; color:var(--ink-soft); margin:0; }
+  .card.pi { border-left:3px solid var(--accent); }
+  .card.slate { border-left:3px solid var(--slate); }
+
+  .chain { list-style:none; padding:0; margin:10px 0; counter-reset:step; display:grid; gap:10px; }
+  .chain li { background:var(--surface); border:1px solid var(--line); border-radius:10px;
+    padding:13px 16px 13px 52px; position:relative; font-size:14px; }
+  .chain li::before { counter-increment:step; content:counter(step); position:absolute; left:12px; top:12px;
+    width:26px; height:26px; background:var(--accent); color:#fff; border-radius:7px; font-family:var(--mono);
+    font-size:13px; display:grid; place-items:center; }
+  .chain code, code.inl { font-family:var(--mono); font-size:12.5px; color:var(--accent-ink); }
+  .chain .r { color:var(--ink-faint); }
+
+  pre { background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:15px 16px;
+    overflow-x:auto; font-family:var(--mono); font-size:12.5px; line-height:1.55; margin:8px 0; color:var(--ink); }
+  pre .k { color:var(--accent-ink); }
+  pre .c { color:var(--ink-faint); }
+
+  hr.div { border:none; border-top:1px solid var(--line); margin:42px 0 0; }
+  footer { color:var(--ink-faint); font-size:12.5px; font-family:var(--mono); padding:22px 0 0; line-height:1.7; }
+
+  @media (max-width:560px) {
+    .head-inner { padding:32px 20px 24px; }
+    .wrap { padding:0 18px; }
+    .arrow { transform:rotate(90deg); width:100%; }
+    .node { flex-basis:100%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-inner">
+    <p class="eyebrow">System Documentation · Gamuda Internship</p>
+    <h1>Smart Street Light — Sensor-Driven Auto-Dimming</h1>
+    <p class="sub">A Raspberry Pi 5 reads local sensors, decides a brightness level from ambient light and presence, and drives a Lumilite street-light controller through its cloud API. This document describes the full system as built and running.</p>
+    <dl class="meta">
+      <div><dt>Controller</dt><dd>Raspberry Pi 5</dd></div>
+      <div><dt>Lamp</dt><dd>SZ10 · dev 609106</dd></div>
+      <div><dt>Logic</dt><dd>Node-RED + Python</dd></div>
+      <div><dt>Status</dt><dd><span class="pill ok dot">Running</span></dd></div>
+      <div><dt>Updated</dt><dd>2026-09-03</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- 1 OVERVIEW -->
+  <section>
+    <div class="s-head"><span class="s-num">01</span><h2>Overview</h2></div>
+    <p class="lede">Four sensors wired to the Pi feed a decision engine that sets one output: the lamp's brightness (0–100%). The Pi provides the intelligence — presence detection and ambient-light banding — that the lamp controller cannot do on its own.</p>
+    <div class="stats">
+      <div class="stat"><div class="n">4 sensors</div><div class="l">Lux, temperature, motion, and mains power, all read locally on the Pi</div></div>
+      <div class="stat"><div class="n">2 loops</div><div class="l">One ingests sensor data; one decides and sends brightness on a timer</div></div>
+      <div class="stat"><div class="n">4 levels</div><div class="l">Brightness bands: 100 / 50 / 30 / 10, chosen by light &amp; motion</div></div>
+      <div class="stat"><div class="n">MQTT</div><div class="l">Sensors and logic communicate over a local Mosquitto broker</div></div>
+    </div>
+  </section>
+
+  <!-- 2 ARCHITECTURE -->
+  <section>
+    <div class="s-head"><span class="s-num">02</span><h2>Architecture</h2></div>
+    <p class="lede">Data flows left to right: sensors → Pi decision engine → vendor cloud → controller → lamp. Inside the Pi, the work splits into two independent loops that meet only through shared memory in Node-RED.</p>
+    <div class="flow">
+      <div class="node"><div class="t">Sensors</div><div class="d">lux · temp · PIR · power</div></div>
+      <div class="arrow">&rarr;</div>
+      <div class="node pi"><div class="t">Pi 5 · Python + Node-RED</div><div class="d">read &amp; decide</div></div>
+      <div class="arrow">&rarr;</div>
+      <div class="node cloud"><div class="t">rulr cloud</div><div class="d">CAS + control API</div></div>
+      <div class="arrow">&rarr;</div>
+      <div class="node"><div class="t">Controller</div><div class="d">SZ10 · 4G · 0–10V</div></div>
+      <div class="arrow">&rarr;</div>
+      <div class="node"><div class="t">Lamp</div><div class="d">LED fixture</div></div>
+    </div>
+    <div class="cards">
+      <div class="card pi"><h4>Loop A — Ingest</h4><p>Sensors publish to MQTT every 2 s. Node-RED routes each topic to the dashboard and to a "Store readings" node that keeps the latest values in flow memory.</p></div>
+      <div class="card slate"><h4>Loop B — Decide</h4><p>A timer fires every 3 s, reads that memory, computes a brightness band, and sends it to the lamp only when the value changes.</p></div>
+    </div>
+  </section>
+
+  <!-- 3 HARDWARE -->
+  <section>
+    <div class="s-head"><span class="s-num">03</span><h2>Hardware</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Component</th><th>Role</th><th>Interface</th></tr></thead>
+        <tbody>
+          <tr><td>Raspberry Pi 5</td><td>Decision engine — runs the logic and talks to the cloud</td><td class="mono">—</td></tr>
+          <tr><td>BH1750</td><td>Ambient light (lux)</td><td class="mono">I²C</td></tr>
+          <tr><td>BME280</td><td>Temperature</td><td class="mono">I²C</td></tr>
+          <tr><td>PZEM-004T</td><td>Mains voltage / current / power / energy</td><td class="mono">Modbus · /dev/ttyAMA0</td></tr>
+          <tr><td>HC-SR501</td><td>Motion (PIR presence)</td><td class="mono">GPIO27</td></tr>
+          <tr><td>SZ10-R1A-Cat.1-M</td><td>Street-light controller — drives the LED driver, meters the load</td><td class="mono">4G LTE · 0–10V/PWM</td></tr>
+          <tr><td>LED fixture</td><td>The lamp itself</td><td class="mono">driven by SZ10</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 4 SOFTWARE -->
+  <section>
+    <div class="s-head"><span class="s-num">04</span><h2>Software &amp; services</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Service</th><th>What it does</th><th>Unit</th></tr></thead>
+        <tbody>
+          <tr><td><span class="mono">streetlight_sensors.py</span></td><td>Reads all sensors, publishes readings to MQTT</td><td class="mono">streetlight-sensors.service</td></tr>
+          <tr><td>Mosquitto</td><td>Local MQTT broker connecting the Python script and Node-RED</td><td class="mono">localhost:1883</td></tr>
+          <tr><td>Node-RED</td><td>Routing, dashboard, decision logic, cloud calls</td><td class="mono">nodered.service · :1880</td></tr>
+          <tr><td>rulr-aiot cloud</td><td>Relays commands over 4G to the controller</td><td class="mono">rulr-aiot.com</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>MQTT topics</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Topic</th><th>Payload</th><th>Cadence</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">streetlight/1/motion</td><td>1 / 0 (PIR state)</td><td>on change <em>and</em> every 2 s (heartbeat)</td></tr>
+          <tr><td class="mono">streetlight/1/lux</td><td>lux value</td><td>every 2 s</td></tr>
+          <tr><td class="mono">streetlight/1/temp</td><td>°C</td><td>every 2 s</td></tr>
+          <tr><td class="mono">streetlight/1/voltage</td><td>volts</td><td>every 2 s</td></tr>
+          <tr><td class="mono">streetlight/1/power</td><td>watts</td><td>every 2 s</td></tr>
+          <tr><td class="mono">streetlight/1/energy</td><td>watt-hours</td><td>every 2 s</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:14px;color:var(--ink-soft)">The motion <strong>heartbeat</strong> is important: publishing state every 2 s (not only on PIR edges) keeps the decision loop from getting stuck on a stale "no motion" reading during a long continuous presence.</p>
+  </section>
+
+  <!-- 5 SEQUENCE -->
+  <section>
+    <div class="s-head"><span class="s-num">05</span><h2>How one cycle works</h2></div>
+    <p class="lede">The two loops run on different clocks — ingest every 2 s, decide every 3 s — and connect only through Node-RED flow memory (<code class="inl">lux</code>, <code class="inl">motionState</code>, <code class="inl">motionEndTime</code>).</p>
+    <ol class="chain">
+      <li>Sensors are read by the Python script; values publish to <code>streetlight/1/#</code> over MQTT.</li>
+      <li>Node-RED's MQTT-in feeds a <strong>switch</strong> that routes each topic to dashboard widgets and to <strong>Store readings</strong>.</li>
+      <li><strong>Store readings</strong> saves <code>lux</code> and <code>motionState</code> to flow memory, and stamps <code>motionEndTime</code> the moment motion stops <span class="r">(starts the cooldown clock)</span>.</li>
+      <li>Every 3 s a timer triggers <strong>device level</strong>, which reads that memory and computes a brightness band.</li>
+      <li>An <strong>rbe</strong> filter passes the value on <em>only when it changed</em>, so unchanged levels don't spam the cloud.</li>
+      <li><strong>send dimTo</strong> logs in and POSTs the command; the flow then waits and polls the result back.</li>
+      <li>The cloud relays it over 4G to the controller, which drives the 0–10V input and the <strong>lamp changes brightness</strong>.</li>
+    </ol>
+    <p class="looptag">Plain-language cycle</p>
+    <p>Someone walks in &rarr; PIR HIGH &rarr; heartbeat holds <code class="inl">motionState = 1</code> &rarr; the 3 s timer evaluates &rarr; if dark, <strong>100%</strong> &rarr; command sent &rarr; lamp brightens. They leave &rarr; PIR LOW &rarr; after a <strong>5 s cooldown</strong>, the next evaluation drops it to <strong>10%</strong>.</p>
+  </section>
+
+  <!-- 6 DIMMING LOGIC -->
+  <section>
+    <div class="s-head"><span class="s-num">06</span><h2>Dimming logic</h2></div>
+    <p class="lede">The lamp is considered <strong>on</strong> while the PIR is high, and for a 5-second cooldown after it drops. When on, the brightness is chosen by ambient light in discrete bands tuned to a room baseline of ~40 lux.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Condition</th><th>Ambient lux</th><th>Brightness</th></tr></thead>
+        <tbody>
+          <tr><td>No motion (after 5 s cooldown)</td><td class="mono">any</td><td><span class="mono">10</span></td></tr>
+          <tr><td>Motion · very dark</td><td class="mono">&lt; 10</td><td><span class="mono">100</span></td></tr>
+          <tr><td>Motion · room level</td><td class="mono">10 – 40</td><td><span class="mono">50</span></td></tr>
+          <tr><td>Motion · brighter than room</td><td class="mono">&gt; 40</td><td><span class="mono">30</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:14px;color:var(--ink-soft)">Boundary: exactly 40 lux &rarr; 50 (room level); 41 and above &rarr; 30. Cover the sensor to force full brightness; shine a light on it to drop to 30.</p>
+    <pre><span class="c">// Node-RED "device level" node</span>
+<span class="k">const</span> lightOn = (motionState === 1) || (Date.now() - motionEnd &lt; 5000);
+
+<span class="k">if</span> (!lightOn)      level = 10;    <span class="c">// nobody present</span>
+<span class="k">else if</span> (lux &lt; 10)  level = 100;   <span class="c">// very dark</span>
+<span class="k">else if</span> (lux &lt;= 40) level = 50;    <span class="c">// room level (~40)</span>
+<span class="k">else</span>               level = 30;    <span class="c">// brighter than room</span></pre>
+  </section>
+
+  <!-- 7 CONTROL PATH -->
+  <section>
+    <div class="s-head"><span class="s-num">07</span><h2>Control path to the lamp</h2></div>
+    <p class="lede">The lamp is a 4G device reachable only through the vendor cloud. Each command is one authenticated POST; the brightness command carries the level as a parameter.</p>
+    <pre><span class="k">POST</span> /mm/things/service/control
+{ <span class="k">"thingsObjectId"</span>: 609106,
+  <span class="k">"serviceId"</span>: 172,                                 <span class="c">// 172 = set brightness</span>
+  <span class="k">"serviceParamsList"</span>: [ {"param": 50, "serviceParamId": 231} ] }</pre>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Action</th><th>serviceId</th></tr></thead>
+        <tbody>
+          <tr><td>Turn on / off</td><td><span class="id">170 / 171</span></td></tr>
+          <tr><td>Set brightness (0–100)</td><td><span class="id">172</span> · param 231</td></tr>
+          <tr><td>Query state (brightness, V, A, W)</td><td><span class="id">169</span></td></tr>
+          <tr><td>Query energy &amp; runtime</td><td><span class="id">339</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:14px;color:var(--ink-soft)">Login uses the platform's CAS flow (RSA-encrypted password &rarr; ticket &rarr; session). The full protocol and service map are held in the project's API reference.</p>
+  </section>
+
+  <!-- 8 TUNING -->
+  <section>
+    <div class="s-head"><span class="s-num">08</span><h2>Tuning parameters</h2></div>
+    <p class="lede">All adjustable in the Node-RED <strong>device level</strong> node; the sensor cadence is in the Python script.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Parameter</th><th>Current</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td>Cooldown</td><td class="mono">5 s</td><td>How long the lamp stays on after motion stops</td></tr>
+          <tr><td>Dark threshold</td><td class="mono">&lt; 10 lux</td><td>Below this &rarr; full brightness (100)</td></tr>
+          <tr><td>Room band</td><td class="mono">10 – 40 lux</td><td>Baseline ambient &rarr; level 50</td></tr>
+          <tr><td>Bright threshold</td><td class="mono">&gt; 40 lux</td><td>Above this &rarr; level 30</td></tr>
+          <tr><td>Idle level</td><td class="mono">10</td><td>Brightness when no one is present</td></tr>
+          <tr><td>Decision interval</td><td class="mono">3 s</td><td>How often brightness is re-evaluated</td></tr>
+          <tr><td>Sensor / heartbeat interval</td><td class="mono">2 s</td><td>How often readings and motion state publish</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="div">
+  <footer>
+    Smart Street Light system documentation · Gamuda internship · 2026-09-03.<br>
+    Platform: Raspberry Pi 5 (Node-RED + Python) &rarr; rulr-aiot cloud &rarr; SZ10-R1A-Cat.1-M controller, device 609106.<br>
+    Live-tuned and verified on the running system. Credentials handled separately and not included here.
+  </footer>
+
+</main>
+</body>
+</html>

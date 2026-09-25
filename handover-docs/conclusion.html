@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Smart Streetlight Project — Handover</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --card: #ffffff; --ink: #1c1c1c; --sub: #5b5b5b;
+    --line: #dcdcd8; --accent: #2563eb; --ok: #16803c; --warn: #b45309; --pend: #6b7280;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.55 -apple-system,Segoe UI,Roboto,Arial,sans-serif; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  .meta { color: var(--sub); font-size: 13px; margin-bottom: 32px; }
+  h2 { font-size: 17px; margin: 40px 0 12px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; margin-bottom: 14px; }
+  code, .mono { font-family: ui-monospace, Consolas, monospace; font-size: 13px; background: #eef0f4; padding: 1px 5px; border-radius: 4px; }
+  pre { background: #0f172a; color: #e2e8f0; padding: 14px 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td, th { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--sub); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+  .badge { display:inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: .03em; }
+  .badge.ok { background:#dcfce7; color: var(--ok); }
+  .badge.warn { background:#fef3c7; color: var(--warn); }
+  .badge.pend { background:#e5e7eb; color: var(--pend); }
+  ul.timeline { list-style: none; padding: 0; margin: 0; }
+  ul.timeline li { padding: 10px 0 10px 20px; border-left: 2px solid var(--line); position: relative; }
+  ul.timeline li::before { content: ""; position: absolute; left: -6px; top: 16px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+  ul.timeline li:last-child { border-left: 2px solid transparent; }
+  .diagram-card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px; overflow-x: auto; }
+  .diagram-svg text { font-family: -apple-system,Segoe UI,Roboto,Arial,sans-serif; }
+  .diagram-legend { display:flex; gap:18px; flex-wrap:wrap; padding: 4px 10px 12px; font-size: 12px; color: var(--sub); }
+  .diagram-legend span { display:inline-flex; align-items:center; gap:6px; }
+  .diagram-legend i { width:11px; height:11px; border-radius:3px; display:inline-block; }
+  a { color: var(--accent); }
+  .files li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Smart Streetlight Project — Handover</h1>
+  <div class="meta">Written 2026-09-18, last updated 2026-09-24 · internship concluding soon · handing over to supervisor · covers work from 2026-08-28 to 2026-09-24</div>
+  <div class="card" style="border-left: 4px solid var(--accent);">
+    <p style="margin:0;">This is a handover document — everything needed to pick up this project: how the system works, how to reach the Pi, current status, and things to watch out for. All reference files it links to are in this same folder.</p>
+  </div>
+
+  <h2>Quick reference</h2>
+  <div class="card">
+    <table>
+      <tr><th>Node-RED editor</th><td><a href="http://raspberrypi.local:1880/">http://raspberrypi.local:1880/</a> (or <span class="mono">http://192.168.0.127:1880/</span> — IP may change on reboot, prefer the hostname)</td></tr>
+      <tr><th>Node-RED dashboard</th><td><a href="http://raspberrypi.local:1880/ui/">http://raspberrypi.local:1880/ui/</a> — the "Light energy" live-sensors dashboard (gauges/chart)</td></tr>
+      <tr><th>SSH to Pi</th><td><span class="mono">ssh pi@raspberrypi.local</span> — key-based auth already set up from this laptop, no password needed. (Old IP <span class="mono">192.168.0.45</span> was the Pi 5; retired after migration.)</td></tr>
+      <tr><th>Pi IP address</th><td><span class="mono">192.168.0.127</span> — use if the <span class="mono">raspberrypi.local</span> hostname doesn't resolve. Confirmed current 2026-09-24; may change on reboot since it's DHCP-assigned, prefer the hostname when possible.</td></tr>
+      <tr><th>PS</th><td><span class="mono">0123456789</span></td></tr>
+      <tr><th>GIMS Cloud Run API</th><td><span class="mono">https://gims-api-744852476592.asia-southeast1.run.app</span></td></tr>
+      <tr><th>GIMS GCP project</th><td><span class="mono">gtech-sb-yeapwengyeow-dev</span></td></tr>
+      <tr><th>GIMS Smart Streetlight project UUID</th><td><span class="mono">32502814-cc6e-5b81-a2fe-f3a04fa9633b</span></td></tr>
+      <tr><th>GIMS tenant ID</th><td><span class="mono">761988e2-8b8b-4f66-882d-a4d844561266</span></td></tr>
+      <tr><th>Lumilite light UUID (dim target)</th><td><span class="mono">3d354308-8546-59ff-a564-436305cb7cf0</span></td></tr>
+      <tr><th>Pi sensor node UUID</th><td><span class="mono">35c0bd55-401d-5a5f-9afc-fee9806d0efe</span> — confirmed via <span class="mono">GET /api/v1/devices</span>, name "Pi Sensor Node (Pole 1)"</td></tr>
+    </table>
+  </div>
+
+  <h2>Connecting to the Pi</h2>
+  <div class="card">
+    <p><b>Normal case:</b> the Pi and the light pole are both here in the office, on the same network as any office laptop. From a laptop on that network:</p>
+    <pre>ssh pi@raspberrypi.local</pre>
+    <p style="color:var(--sub); font-size:13px;">Key-based auth is already set up from the laptop this was developed on — no password needed there. On a <i>different</i> laptop, you'd need either the password (ask supervisor/IT if not already known) or to copy that laptop's own SSH public key into <span class="mono">/home/pi/.ssh/authorized_keys</span> on the Pi once, using the password.</p>
+
+    <p><b>If <span class="mono">raspberrypi.local</span> doesn't resolve or times out</b>, work through this in order — every step here is something we actually hit during this project:</p>
+    <ol>
+      <li><b>Check your own laptop's network first.</b> Run <span class="mono">ipconfig</span> and confirm you're actually on the office's network (not a guest WiFi, VPN, or mobile hotspot) — several "Pi is unreachable" scares during this project turned out to be the laptop being on the wrong network, not the Pi being down.</li>
+      <li><b>Ping it:</b> <span class="mono">ping raspberrypi.local</span>. A reply means it's alive and reachable by hostname even if its IP changed. No reply at all (not even "destination unreachable") usually means step 1 is the issue.</li>
+      <li><b>Check the office router's DHCP client list</b> (typically <span class="mono">http://192.168.0.1</span> in a browser) for a device named <span class="mono">raspberrypi</span> — this confirms whether it's even joined the network, and shows its current IP if the hostname lookup itself is having trouble.</li>
+      <li><b>Physically check the Pi's LEDs</b> if you can get to it: solid red = power is fine; red off/flickering = power problem (check the USB-C cable/power supply — Pi 4B needs 5V/3A). Green blinking = the OS is alive and doing SD card activity; green never blinking at all after power-on usually means it isn't booting.</li>
+      <li><b>Still nothing?</b> Power-cycle it (unplug/replug), wait about a minute, and try again from step 2.</li>
+    </ol>
+
+    <p><b>Talking to GIMS</b> (from the Pi, or from Node-RED running on it) always uses the same pattern: a Google service-account key file already on the Pi (<span class="mono">/home/pi/sa-key.json</span>) plus the tenant ID from the Quick Reference table above, sent as an <span class="mono">X-Tenant-Id</span> header alongside a Google-issued auth token. Full detail in <a href="gims-reference.md">gims-reference.md</a> — nothing here needs to change per-request, the tenant ID and key file are fixed.</p>
+  </div>
+
+  <h2>How the system works</h2>
+  <div class="card">
+    <p>The Pi reads its sensors continuously and does two independent things with the data: it feeds a local dashboard/automation loop over MQTT, and separately reports readings straight to GIMS. Nothing in this system waits on GIMS to be reachable — it's designed to keep running locally even if the cloud side is down.</p>
+    <p><b>Sensor loop (every 2s, in <span class="mono">streetlight_sensors.py</span>):</b> reads BH1750 (lux) and BME280 (temperature) over I2C, and watches the PIR pin continuously. Every reading publishes to the local Mosquitto broker on <span class="mono">streetlight/1/&lt;metric&gt;</span>. Motion publishes both immediately on a state <i>change</i> (0→1 or 1→0, for responsiveness) <i>and</i> again every 2 seconds regardless of change — so Node-RED's cached motion state never goes stale during a long PIR hold. (PZEM power monitoring was attempted but abandoned — see Cautions. The script still handles a PZEM read failure gracefully, it just never succeeds since nothing is connected.)</p>
+    <p><b>Telemetry to GIMS (every 30s, same script):</b> the latest lux/temp/voltage/power readings are POSTed straight to <span class="mono">/api/v1/edge_devices/{id}/telemetry</span> using a Google ID token — this is a separate path from MQTT/Node-RED entirely.</p>
+    <p><b>Dashboard + automation (Node-RED, continuous + every 3s):</b> Node-RED subscribes to all <span class="mono">streetlight/1/#</span> topics. Every message updates the live dashboard immediately (Lux, Temperature, and Motion — the voltage/power widgets were removed 2026-09-24 after PZEM was abandoned), and the lux/motion values are also cached into flow context. Separately, a timer fires every 3 seconds, reads that cached context, and computes a target dim level: <b>10</b> (idle) if there's no motion and it's been more than 5 seconds since motion last stopped, otherwise <b>100</b> (lux&lt;30, genuinely dark) or <b>50</b> (any other ambient, i.e. motion detected and it's not near pitch-black). A command is only actually sent to GIMS when this computed level <i>changes</i> from the last one sent (via an RBE node) — so the light isn't being re-commanded 20 times a second even though the loop checks that often. <i>(Simplified to this 3-level, single-cutoff scheme on 2026-09-25 — the earlier 2-cutoff scheme needed re-tuning every time the sensor was repositioned or ambient changed; one low cutoff near true darkness means the "else" bucket absorbs whatever ambient the site actually has, so it shouldn't need retuning again. The old 4-level scheme is tagged <span class="mono">before-3level</span> in git if it's ever needed back.)</i> The computed level itself (not just the GIMS command) is also shown live on the dashboard — a "Brightness Level" gauge and a "Level History" chart, added 2026-09-24, both update every 3 seconds off the same timer regardless of whether a command was actually sent to GIMS.</p>
+    <p><b>Dim command round-trip:</b> when the level changes, Node-RED authenticates with the same Google service account (<span class="mono">sa-key.json</span>) and POSTs <span class="mono">{targetDeviceId, method:"dimTo", params:{level}}</span> to <span class="mono">/api/v1/commands</span>, then polls <span class="mono">GET /api/v1/commands/{id}</span> a couple seconds later to confirm GIMS actually delivered it to the physical light.</p>
+    <p><b>Known quirk, now fixed:</b> motion used to only publish on state change, so a PIR module with a long internal hold time could keep Node-RED's cached state stale/stuck long after a person actually left. The 2-second continuous re-publish (above) fixes that — Node-RED's motion state is now never more than 2s out of date. What still matters is the PIR hardware's own Time-Delay potentiometer (currently ~10s ± 3s), which controls how long the PIR itself reports "motion" after a person leaves — that's a real-world sensor characteristic, not a software staleness bug, and it's now longer than Node-RED's own 5-second software cooldown, so the PIR is the actual bottleneck on how fast the light drops back to idle.</p>
+    <p><b>Known open issue — lux self-detection feedback:</b> the lux sensor can pick up the streetlight's own output, not just external ambient light, creating a potential feedback loop (dark → light goes full bright → sensor now sees its own glow → reads "brighter" → dims down → sees less light → reads "dark" again → repeats/oscillates). Not yet confirmed whether this is actually happening at the current sensor position — next step is experimenting with sensor placement/angle (shielding it from the fixture's own beam, standard practice for photocells) to see if it resolves on its own. If it persists after repositioning, a software-side option discussed: only re-evaluate lux once per motion trigger (snapshot at trigger time) rather than continuously while the light is already on, so the light can't fight its own reading mid-demo.</p>
+    <p><b>Auto-starts on power-on:</b> all three services — <span class="mono">mosquitto</span>, <span class="mono">streetlight-sensors.service</span>, and <span class="mono">nodered.service</span> — are systemd-<span class="mono">enabled</span>, not just running. If the Pi loses power and comes back, everything (sensor publishing, MQTT, Node-RED dashboard and dim automation, and the health/power-monitoring cron job) restarts on its own with no manual intervention needed. Confirmed live on 2026-09-18 via <span class="mono">systemctl is-enabled</span>.</p>
+  </div>
+
+  <h2>System architecture</h2>
+  <div class="diagram-legend">
+    <span><i style="background:#f1f5f9;border:1.5px solid #64748b;"></i>Hardware</span>
+    <span><i style="background:#eff6ff;border:1.5px solid #2563eb;"></i>Pi / local software</span>
+    <span><i style="background:#f5f3ff;border:1.5px solid #7c3aed;"></i>Node-RED</span>
+    <span><i style="background:#ecfdf5;border:1.5px solid #16803c;"></i>GIMS / cloud</span>
+  </div>
+  <div class="diagram-card">
+  <svg class="diagram-svg" viewBox="0 0 860 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="System architecture block diagram">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+      </marker>
+    </defs>
+
+    <!-- connectors (drawn first, boxes on top) -->
+    <g stroke="#64748b" stroke-width="1.6" fill="none" marker-end="url(#arrow)">
+      <path d="M430,70 V108"/>
+      <path d="M370,160 C330,175 300,185 280,198"/>
+      <path d="M490,160 C560,175 600,185 620,198"/>
+      <path d="M280,250 V298"/>
+      <path d="M245,350 C210,363 180,373 150,388"/>
+      <path d="M315,350 C345,363 365,373 380,388"/>
+      <path d="M380,440 V478"/>
+      <path d="M380,530 V568"/>
+      <path d="M380,620 V658"/>
+      <path d="M380,710 C420,730 470,745 500,762"/>
+      <path d="M660,260 C660,400 660,600 630,758"/>
+    </g>
+
+    <!-- 1. Sensors -->
+    <rect x="310" y="20" width="240" height="50" rx="9" fill="#f1f5f9" stroke="#475569" stroke-width="1.6"/>
+    <text x="430" y="40" text-anchor="middle" font-size="13" font-weight="700" fill="#1c1c1c">Sensors</text>
+    <text x="430" y="57" text-anchor="middle" font-size="11.5" fill="#475569">BH1750 · BME280 · PIR (PZEM abandoned, see Cautions)</text>
+
+    <!-- 2. Python script -->
+    <rect x="290" y="110" width="280" height="50" rx="9" fill="#eff6ff" stroke="#2563eb" stroke-width="1.6"/>
+    <text x="430" y="130" text-anchor="middle" font-size="13" font-weight="700" fill="#1c1c1c">streetlight_sensors.py</text>
+    <text x="430" y="147" text-anchor="middle" font-size="11.5" fill="#475569">reads sensors on the Pi</text>
+
+    <!-- 3a. Mosquitto -->
+    <rect x="150" y="200" width="260" height="50" rx="9" fill="#eff6ff" stroke="#2563eb" stroke-width="1.6"/>
+    <text x="280" y="220" text-anchor="middle" font-size="13" font-weight="700" fill="#1c1c1c">Local Mosquitto broker</text>
+    <text x="280" y="237" text-anchor="middle" font-size="11.5" fill="#475569">localhost:1883</text>
+
+    <!-- 3b. GIMS telemetry -->
+    <rect x="500" y="198" width="320" height="60" rx="9" fill="#ecfdf5" stroke="#16803c" stroke-width="1.6"/>
+    <text x="660" y="217" text-anchor="middle" font-size="13" font-weight="700" fill="#1c1c1c">GIMS telemetry (every 30s)</text>
+    <text x="660" y="234" text-anchor="middle" font-size="11" fill="#166534">POST /api/v1/edge_devices/{id}/telemetry</text>
+    <text x="660" y="249" text-anchor="middle" font-size="11" fill="#166534">auth: sa-key.json → ID token</text>
+
+    <!-- 4. Node-RED ingest -->
+    <rect x="150" y="300" width="260" height="50" rx="9" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.6"/>
+    <text x="280" y="320" text-anchor="middle" font-size="13" font-weight="700" fill="#1c1c1c">Node-RED</text>
+    <text x="280" y="337" text-anchor="middle" font-size="11.5" fill="#475569">mqtt-in → switch</text>
+
+    <!-- 5a. Dashboard -->
+    <rect x="20" y="390" width="200" height="55" rx="9" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.6"/>
+    <text x="120" y="412" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1c1c1c">Dashboard UI</text>
+    <text x="120" y="429" text-anchor="middle" font-size="11" fill="#475569">ui_gauge / ui_text / ui_chart</text>
+
+    <!-- 5b. Store readings -->
+    <rect x="270" y="390" width="220" height="50" rx="9" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.6"/>
+    <text x="380" y="410" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1c1c1c">Store readings</text>
+    <text x="380" y="427" text-anchor="middle" font-size="11" fill="#475569">flow context: lux, last-motion-time</text>
+
+    <!-- 6. dim logic -->
+    <rect x="270" y="480" width="220" height="50" rx="9" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.6"/>
+    <text x="380" y="499" text-anchor="middle" font-size="12" font-weight="700" fill="#1c1c1c">inject (3s) → device level</text>
+    <text x="380" y="516" text-anchor="middle" font-size="10.5" fill="#475569">10 / 100 / 50 by lux+motion → rbe</text>
+
+    <!-- 7. send dimTo -->
+    <rect x="270" y="570" width="220" height="50" rx="9" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.6"/>
+    <text x="380" y="590" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1c1c1c">send dimTo</text>
+    <text x="380" y="607" text-anchor="middle" font-size="10.5" fill="#475569">POST /api/v1/commands</text>
+
+    <!-- 8. check status -->
+    <rect x="270" y="660" width="220" height="50" rx="9" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.6"/>
+    <text x="380" y="680" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1c1c1c">check status</text>
+    <text x="380" y="697" text-anchor="middle" font-size="10.5" fill="#475569">GET /api/v1/commands/{id}</text>
+
+    <!-- 9. GIMS -->
+    <rect x="480" y="760" width="300" height="55" rx="9" fill="#ecfdf5" stroke="#16803c" stroke-width="1.6"/>
+    <text x="630" y="782" text-anchor="middle" font-size="13" font-weight="700" fill="#1c1c1c">GIMS</text>
+    <text x="630" y="799" text-anchor="middle" font-size="11" fill="#166534">gtech-sb-yeapwengyeow-dev · Cloud Run API</text>
+  </svg>
+  </div>
+  <p style="color:var(--sub); font-size:12.5px; margin-top:8px;">Two independent paths reach GIMS: sensor telemetry goes straight from the Python script (green, right), while dim commands are computed locally in Node-RED from cached lux/motion and pushed up via the same REST + ID-token auth (purple, center).</p>
+
+  <h2>Node-RED flow chart (interactive)</h2>
+  <p style="color:var(--sub); font-size:13px; margin:-4px 0 10px;">Generated with the archify skill from <a href="nodered-flow.workflow.json">nodered-flow.workflow.json</a> — pan/zoom, theme toggle, and search built in. Function-node code is in <a href="node-red-function-code.md">node-red-function-code.md</a>; GIMS IDs/endpoints in <a href="gims-reference.md">gims-reference.md</a>.</p>
+  <div class="card" style="text-align:center; padding:28px;">
+    <a href="nodered-flow-chart.html" style="display:inline-block; font-weight:600; color:var(--accent); font-size:15px;">Open the Node-RED flow chart →</a>
+    <p style="color:var(--sub); font-size:12.5px; margin-top:10px;">Two lanes: sensor ingestion (MQTT → topic switch → dashboard/flow-context) and the 3-second dim-command automation loop (inject → device level → RBE → send dimTo → GIMS → check status). The manual GIMS-auth diagnostic branch and unused/disconnected inject node aren't shown here — see <a href="node-red-function-code.md">node-red-function-code.md</a> for those.</p>
+  </div>
+
+  <h2>What was fixed / built</h2>
+  <ul class="timeline">
+    <li><b>Migrated the edge device from Pi 5 to Pi 4B</b> (SD card swap, mandatory UART/Bluetooth fix) — all services, config, and logs carried over intact.</li>
+    <li><b>Made MQTT/networking reliable:</b> moved off HiveMQ Cloud to a local Mosquitto broker, and fixed a real bug (missing <span class="mono">client.loop_start()</span>) that was very likely causing silent connection drops. Backed by a logging/monitoring system (health checks every 5 min, persistent journald, git version control) so future issues leave a trace.</li>
+    <li><b>Built and verified the GIMS integration end-to-end:</b> sensor telemetry (REST + ID-token auth, every 30s) and dim commands both confirmed working, including a live command that made the physical light respond with matching real-world telemetry.</li>
+    <li><b>Diagnosed and fixed a recurring I2C bus lockup</b> that was taking down lux/temp readings — traced to a loose BME280 GND connection via a live wiggle-test.</li>
+    <li><b>PZEM power monitoring was extensively troubleshot then abandoned</b> (doesn't affect auto-dim); the dashboard and dim-level thresholds were subsequently recalibrated for this deployment's real ~130-200 lux ambient conditions.</li>
+  </ul>
+
+  <h2>Cautions</h2>
+  <div class="card">
+    <ul style="margin:0; padding-left: 20px;">
+      <li>PZEM wiring is still physically connected but unused — worth disconnecting it (including the unprotected 5V line) rather than leaving it in place.</li>
+      <li>The lux sensor may be picking up the streetlight's own light as it dims, which could cause brightness oscillation — not yet confirmed, worth watching for if the light seems to flicker between levels on its own.</li>
+      <li>Dim scheme simplified 2026-09-25 to 3 levels with a single lux cutoff (10 idle / 100 dark below 30 lux / 50 otherwise) — avoids needing to re-tune thresholds every time the sensor is repositioned. Confirmed live at ~177 lux producing level 50; the dark-tier (100) branch hasn't been live-tested yet (needs covering the sensor or testing at night). Previous 4-level scheme is tagged <span class="mono">before-3level</span> in git for recall.</li>
+      <li>The Node-RED editor has no login set up — anyone on the office network can open and edit the flow.</li>
+      <li>Optional: Tailscale (or similar) would help with the WiFi/network drops that repeatedly interrupted SSH reachability during this project.</li>
+    </ul>
+  </div>
+
+  <h2>Making a change</h2>
+  <div class="card">
+    <p>Two different places hold logic, so which route you use depends on what you're changing.</p>
+
+    <h3 style="font-size:14px; margin:16px 0 6px;">A. Node-RED logic (dim thresholds, dashboard, anything in the flow)</h3>
+    <ol>
+      <li>Open <a href="http://raspberrypi.local:1880/">http://raspberrypi.local:1880/</a> in a browser (same network as the Pi).</li>
+      <li>Find the node you want to change on the canvas — e.g. the <span class="mono">device level</span> function node holds the dim-level thresholds. Double-click it to open the code editor.</li>
+      <li>Edit the code in the panel that opens, then click <b>Done</b> (top right of that panel) to close it.</li>
+      <li>Click the red <b>Deploy</b> button (top right of the whole editor) — <b>this step is easy to forget, and nothing takes effect until you do it.</b></li>
+      <li><b>Test it</b>: trigger motion, watch the dashboard or run <span class="mono">mosquitto_sub -h localhost -t 'streetlight/#' -v</span> over SSH to confirm the new behavior.</li>
+      <li><b>Save it to git</b> (see below) so the change is tracked.</li>
+    </ol>
+
+    <h3 style="font-size:14px; margin:16px 0 6px;">B. Python sensor script (<span class="mono">streetlight_sensors.py</span>)</h3>
+    <ol>
+      <li>SSH in: <span class="mono">ssh pi@raspberrypi.local</span></li>
+      <li>Edit the file: <span class="mono">nano /home/pi/streetlight_sensors.py</span></li>
+      <li>Make your changes, then <span class="mono">Ctrl+O</span> (save) → <span class="mono">Enter</span> → <span class="mono">Ctrl+X</span> (exit nano).</li>
+      <li><b>Restart the service to apply it</b> — editing the file alone does nothing until the service restarts: <span class="mono">sudo systemctl restart streetlight-sensors.service</span></li>
+      <li><b>Test it</b>: <span class="mono">sudo systemctl status streetlight-sensors.service</span> should show <span class="mono">active (running)</span> with no errors, then check the dashboard/MQTT as above.</li>
+      <li><b>Save it to git</b> (see below).</li>
+    </ol>
+
+    <h3 style="font-size:14px; margin:16px 0 6px;">Saving any change to git</h3>
+    <pre>cd ~/streetlight-repo
+git add -A
+git commit -m "describe what changed"</pre>
+    <p style="color:var(--sub); font-size:13px;">Both <span class="mono">streetlight_sensors.py</span> and <span class="mono">flows.json</span> (which is what Node-RED's Deploy button actually writes to) are symlinked into this repo, so there's no separate copy step — editing/deploying in place is automatically what git sees. Full detail in "Version control (git)" below.</p>
+  </div>
+
+  <h2>Version control (git)</h2>
+  <div class="card">
+    <p>Set up 2026-09-18 — a local git repo on the Pi at <span class="mono">~/streetlight-repo</span> (no remote configured; that's a deliberate choice left for whoever takes this over, not assumed). Initial commit made, working tree clean.</p>
+    <p><b>Live-tracked via symlink</b> — edit these in their normal location and the repo sees the change automatically, no separate copy step: <span class="mono">streetlight_sensors.py</span>, <span class="mono">flows.json</span>, <span class="mono">settings.js</span>, <span class="mono">health_check.sh</span>.</p>
+    <p><b>Reference copies</b> (root-owned, rarely change — must be manually re-copied into the repo after editing the real one): <span class="mono">streetlight-sensors.service</span> (real path <span class="mono">/etc/systemd/system/</span>), <span class="mono">logrotate-streetlight.conf</span> (real path <span class="mono">/etc/logrotate.d/streetlight</span>).</p>
+    <p>Full workflow notes are in <span class="mono">~/streetlight-repo/README.md</span> on the Pi. <span class="mono">.gitignore</span> blocks common credential filename patterns as a safety net — <span class="mono">sa-key.json</span> and <span class="mono">gcp-service-account.json</span> are not and should never be in this repo.</p>
+  </div>
+
+  <h2>Files in this folder</h2>
+  <div class="card">
+    <ul class="files">
+      <li><span class="mono"><a href="streetlight_sensors.py">streetlight_sensors.py</a></span> — sensor script, re-verified byte-for-byte against the live Pi on 2026-09-18 (now also git-tracked on the Pi itself, see "Version control" below)</li>
+      <li><span class="mono"><a href="hardware-pinout-reference.md">hardware-pinout-reference.md</a></span> — GPIO/I2C/UART pinout for the PIR, BH1750, BME280 (PZEM section kept for historical reference — abandoned, see Cautions)</li>
+      <li><span class="mono"><a href="mosquitto-mqtt-reference.md">mosquitto-mqtt-reference.md</a></span> — Mosquitto install/config, MQTT topics list, test commands</li>
+      <li><span class="mono"><a href="health_check.sh">health_check.sh</a></span> — the Pi's monitoring script (services, network, disk, power/voltage), run every 5 min via cron</li>
+      <li><span class="mono"><a href="streetlight-sensors.service">streetlight-sensors.service</a></span> — systemd unit that runs the sensor script</li>
+      <li><span class="mono"><a href="logrotate-streetlight.conf">logrotate-streetlight.conf</a></span> — logrotate config for the Pi's log files</li>
+      <li><span class="mono"><a href="flows.json">flows.json</a></span> — the raw Node-RED flow export, pulled live from the Pi 4B (2026-09-18)</li>
+      <li><span class="mono"><a href="settings.js">settings.js</a></span> — Node-RED's settings file (declares the <span class="mono">google-auth-library</span> dependency used for GIMS auth); checked for secrets — none active, only commented-out template examples</li>
+      <li><span class="mono"><a href="node-red-function-code.md">node-red-function-code.md</a></span> — the code for every Node-RED function block (Store readings, device level, GIMS login test, send dimTo, check status)</li>
+      <li><span class="mono"><a href="gims-reference.md">gims-reference.md</a></span> — GIMS API base URL, tenant ID, project/device UUIDs, auth pattern, endpoints in use</li>
+      <li><span class="mono"><a href="gims-telemetry-endpoint-handoff.md">gims-telemetry-endpoint-handoff.md</a></span> — handoff doc for the GIMS server team</li>
+      <li><span class="mono"><a href="check-gims-device.js">check-gims-device.js</a></span> — pre-existing diagnostic script found on the Pi (has a known syntax bug, kept as-is)</li>
+      <li><span class="mono"><a href="03_smart_streetlight_system.html">03_smart_streetlight_system.html</a></span> — pre-existing project spec doc (not created by this work) — the dim-level thresholds documented there now match the live deployed logic</li>
+      <li><span class="mono"><a href="nodered-flow-chart.html">nodered-flow-chart.html</a></span> — the interactive flow chart itself (see "Node-RED flow chart" section above)</li>
+      <li><span class="mono"><a href="nodered-flow.workflow.json">nodered-flow.workflow.json</a></span> — the archify source spec for that flow chart, editable/regeneratable</li>
+      <li><span class="mono"><a href="pi5-to-pi4b-sd-swap-guide.html">pi5-to-pi4b-sd-swap-guide.html</a></span> — <span class="badge ok">used</span> the actual route taken (2026-09-18): move the SD card directly, no reflash</li>
+      <li><span class="mono">conclusion.html</span> — this summary</li>
+    </ul>
+    <p style="color:var(--sub); font-size:13px; margin-top:14px;">
+      <b>Intentionally not included:</b> credential files (<span class="mono">sa-key.json</span>, <span class="mono">gcp-service-account.json</span>) — these stay on the Pi only, never copied into a synced folder.
+    </p>
+  </div>
+
+</div>
+</body>
+</html>

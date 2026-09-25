@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pi 5 to Pi 4B SD Swap</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg:#f4f6f8; --card:#fff; --ink:#16202b; --muted:#59646f; --line:#dae0e6;
+    --blue:#1559ea; --blue-soft:#eaf1ff; --amber:#8f5400; --amber-soft:#fff5da;
+    --red:#b02318; --red-soft:#fff0ee; --green:#146b47; --green-soft:#e9f7f0;
+    --code:#0f1720; --code-ink:#e6ebf2;
+  }
+  @media (prefers-color-scheme:dark) {
+    :root { --bg:#10141a; --card:#1a2028; --ink:#ecf1f7; --muted:#a8b3bf; --line:#333e4a;
+      --blue:#7fa9ff; --blue-soft:#132848; --amber:#ffd07a; --amber-soft:#3a2a0e;
+      --red:#ff9b93; --red-soft:#411d1c; --green:#72d3a5; --green-soft:#123326;
+      --code:#080b0f; --code-ink:#e6ebf2; }
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  header { color:#fff; background:linear-gradient(135deg,#0b2f6b,#1559ea 60%,#3b7dff); }
+  .hero, main, footer { width:min(100% - 32px,960px); margin:auto; }
+  .hero { padding:44px 0 38px; }
+  .eyebrow { margin:0 0 8px; font-size:12px; font-weight:750; letter-spacing:.12em; text-transform:uppercase; opacity:.85; }
+  h1 { max-width:780px; margin:0; font-size:clamp(28px,5vw,46px); line-height:1.1; letter-spacing:-.03em; }
+  .subtitle { max-width:720px; margin:14px 0 0; font-size:17.5px; opacity:.92; }
+  main { padding:24px 0 60px; }
+  nav, section, .callout { background:var(--card); border:1px solid var(--line); border-radius:14px; }
+  nav { padding:18px 22px; margin-bottom:18px; }
+  nav strong { display:block; margin-bottom:8px; }
+  nav ol { columns:2; column-gap:32px; margin:0; padding-left:22px; }
+  nav li { padding:3px 0; break-inside:avoid; }
+  a { color:var(--blue); }
+  section { padding:24px 26px; margin:18px 0; }
+  h2 { margin:0 0 10px; font-size:22px; line-height:1.25; }
+  h3 { margin:22px 0 8px; font-size:16.5px; }
+  p { margin:9px 0; }
+  ol, ul { padding-left:24px; }
+  li { margin:7px 0; }
+  .callout { padding:15px 18px; margin:15px 0; border-left:5px solid var(--blue); }
+  .callout.warning { background:var(--amber-soft); border-color:var(--amber); }
+  .callout.danger { background:var(--red-soft); border-color:var(--red); }
+  .callout.ok { background:var(--green-soft); border-color:var(--green); }
+  .callout strong { display:block; margin-bottom:3px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; margin:14px 0; }
+  .tile { border:1px solid var(--line); border-radius:11px; padding:14px 15px; background:color-mix(in srgb,var(--card) 92%,var(--blue-soft)); }
+  .tile strong { display:block; margin-bottom:4px; }
+  pre { overflow:auto; margin:12px 0; padding:14px 16px; border-radius:10px; background:var(--code); color:var(--code-ink); font:13.5px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; }
+  code { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }
+  :not(pre)>code { padding:2px 5px; border-radius:5px; background:var(--blue-soft); color:var(--ink); font-size:.9em; }
+  .table-wrap { overflow-x:auto; border:1px solid var(--line); border-radius:11px; margin:12px 0; }
+  table { width:100%; border-collapse:collapse; min-width:600px; font-size:14px; }
+  th, td { padding:9px 12px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line); }
+  th { background:var(--blue-soft); font-size:12px; letter-spacing:.035em; text-transform:uppercase; }
+  tr:last-child td { border-bottom:0; }
+  .checklist { list-style:none; padding:0; }
+  .checklist li { position:relative; padding-left:29px; }
+  .checklist li::before { content:"\25A1"; position:absolute; left:2px; top:-1px; font-size:20px; color:var(--blue); }
+  .small { color:var(--muted); font-size:14px; }
+  .pill { display:inline-block; padding:1px 9px; border-radius:20px; font-size:11.5px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.05em; vertical-align:2px; margin-left:8px; }
+  .pill.must { background:var(--red-soft); color:var(--red); }
+  .pill.check { background:var(--amber-soft); color:var(--amber); }
+  .pill.none { background:var(--green-soft); color:var(--green); }
+  .fig { margin:18px 0; }
+  .fig-scroll { overflow-x:auto; border:1px solid var(--line); border-radius:11px; background:var(--card); padding:10px 6px; }
+  .fig svg { display:block; min-width:660px; width:100%; height:auto; }
+  .fig figcaption { margin-top:10px; color:var(--muted); font-size:13.5px; line-height:1.5; }
+  .legend { display:flex; flex-wrap:wrap; gap:7px 18px; margin:12px 0 0; padding:0; list-style:none; font-size:13px; }
+  .legend li { display:flex; align-items:center; gap:7px; margin:0; }
+  .legend i { width:13px; height:13px; border-radius:3px; flex:none; }
+  :root { --sv-5v:#d8453a; --sv-3v3:#c47a0d; --sv-gnd:#4b5662; --sv-i2c:#1f6fd0; --sv-i2c2:#0d8397;
+    --sv-uart:#7343d4; --sv-pir:#0d8a5c; --sv-free:#cfd6dd; --sv-free-ink:#66717d;
+    --sv-board:#e9edf1; --sv-row:#eaf1ff; --sv-edge:#b9c3cd; }
+  @media (prefers-color-scheme:dark) {
+    :root { --sv-5v:#f0685c; --sv-3v3:#e8a13c; --sv-gnd:#7d8a97; --sv-i2c:#5b9bf0; --sv-i2c2:#42c2da;
+      --sv-uart:#a684f5; --sv-pir:#3fc38d; --sv-free:#39434e; --sv-free-ink:#9aa5b1;
+      --sv-board:#232b34; --sv-row:#18263d; --sv-edge:#404b57; }
+  }
+  .sv-board { fill:var(--sv-board); stroke:var(--sv-edge); }
+  .sv-row { fill:var(--sv-row); }
+  .sv-pad { stroke:var(--sv-edge); stroke-width:.6; }
+  .sv-5v { fill:var(--sv-5v); } .sv-3v3 { fill:var(--sv-3v3); } .sv-gnd { fill:var(--sv-gnd); }
+  .sv-i2c { fill:var(--sv-i2c); } .sv-i2c2 { fill:var(--sv-i2c2); }
+  .sv-uart { fill:var(--sv-uart); } .sv-pir { fill:var(--sv-pir); }
+  .sv-free { fill:var(--sv-free); }
+  .sv-div { stroke:var(--line); stroke-width:1; }
+  .sv-t { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:11px; fill:var(--ink); }
+  .sv-t.dim { fill:var(--sv-free-ink); }
+  .sv-num { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:10.5px; font-weight:700; fill:#fff; }
+  .sv-num.free { fill:var(--sv-free-ink); font-weight:400; }
+  .sv-note { font-family:system-ui,-apple-system,"Segoe UI",sans-serif; font-size:11px; font-weight:650; fill:var(--blue); }
+  .sv-cap { font-family:system-ui,-apple-system,"Segoe UI",sans-serif; font-size:11.5px; font-weight:700;
+    fill:var(--muted); letter-spacing:.07em; }
+  .sv-wire { fill:none; stroke-width:2.4; stroke-linecap:round; }
+  .sv-w5v { stroke:var(--sv-5v); } .sv-wgnd { stroke:var(--sv-gnd); } .sv-wuart { stroke:var(--sv-uart); }
+  .sv-w3v3 { stroke:var(--sv-3v3); } .sv-wi2c { stroke:var(--sv-i2c); } .sv-wi2c2 { stroke:var(--sv-i2c2); }
+  .sv-wpir { stroke:var(--sv-pir); }
+  .sv-ah { fill:var(--sv-uart); } .sv-ah-pir { fill:var(--sv-pir); }
+  .sv-warn { font-family:system-ui,-apple-system,"Segoe UI",sans-serif; font-size:12px; font-weight:650; fill:var(--amber); }
+  footer { padding:0 0 40px; color:var(--muted); font-size:13px; }
+  @media (max-width:650px) { nav ol { columns:1; } section { padding:20px 17px; } }
+  @media print { :root { color-scheme:light; } body { background:#fff; font-size:11pt; }
+    header { background:#1559ea!important; print-color-adjust:exact; } .hero { padding:26px 0; }
+    nav { display:none; } section { break-inside:avoid; } pre { white-space:pre-wrap; }
+    a { color:inherit; text-decoration:none; }
+    .fig { break-inside:avoid; } .fig svg { min-width:0; } .fig-scroll { overflow:visible; }
+    .sv-num { print-color-adjust:exact; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="hero">
+    <p class="eyebrow">Smart Streetlight &middot; Edge device swap</p>
+    <h1>Move the SD card straight from the Pi 5 into the Pi 4B</h1>
+    <p class="subtitle">No reflash, no reinstall. Same card, same wiring, same GIMS device. One boot-config change is mandatory &mdash; everything else is verification.</p>
+  </div>
+</header>
+
+<main>
+
+  <div class="callout ok">
+    <strong>The short version</strong>
+    Raspberry Pi OS Bookworm ships one image that carries kernels and device trees for both Pi 4 and Pi 5, so the card boots on either board. The only thing that genuinely breaks is the <b>PZEM serial port</b>: on the Pi 4B, <code>/dev/ttyAMA0</code> belongs to Bluetooth by default, not to GPIO&nbsp;14/15. Fix that in <code>config.txt</code> and the rest of the system comes across untouched.
+  </div>
+
+  <nav aria-label="Contents">
+    <strong>Contents</strong>
+    <ol>
+      <li><a href="#backup">Back up the card first</a></li>
+      <li><a href="#swap">Power down and swap</a></li>
+      <li><a href="#hw">Hardware differences to expect</a></li>
+      <li><a href="#boot">First boot checks</a></li>
+      <li><a href="#uart">The one required change: UART</a></li>
+      <li><a href="#pins">Sensor pinout</a></li>
+      <li><a href="#verify">Verify each sensor</a></li>
+      <li><a href="#healthcheck">Pi 5-ism in health_check.sh</a></li>
+      <li><a href="#unchanged">What stays unchanged</a></li>
+      <li><a href="#trouble">Troubleshooting</a></li>
+      <li><a href="#rollback">Rollback</a></li>
+      <li><a href="#checklist">Checklist</a></li>
+    </ol>
+  </nav>
+
+  <section id="backup">
+    <h2>1. Back up the card before it leaves the Pi 5 <span class="pill must">do this</span></h2>
+    <div class="callout danger">
+      <strong>This card is the only copy of two irreplaceable files.</strong>
+      <code>/home/pi/.node-red/flows.json</code> (the whole dashboard and dim-command flow) and <code>/home/pi/sa-key.json</code> (the GIMS service-account key) were never pulled off the Pi &mdash; see <a href="conclusion.html">conclusion.html</a>. The same card is also the one your own notes blame for <b>intermittent read failures</b>. If it dies during the swap with no image, you rebuild the Node-RED flow by hand and re-issue the key in GCP.
+    </div>
+    <p>Two ways. Do at least one.</p>
+    <h3>Option A &mdash; pull the files over the network (fast, if the Pi 5 still boots)</h3>
+    <p>From this laptop, while the Pi 5 is still running:</p>
+<pre><code>scp pi@192.168.0.45:/home/pi/.node-red/flows.json .
+scp pi@192.168.0.45:/home/pi/.node-red/settings.js .
+scp pi@192.168.0.45:/home/pi/sa-key.json .</code></pre>
+    <p class="small">Keep <code>sa-key.json</code> out of shared folders, chat and git. It is a live credential.</p>
+    <h3>Option B &mdash; full raw image of the card (slower, but recovers everything)</h3>
+    <ol>
+      <li>Shut the Pi 5 down cleanly: <code>sudo shutdown -h now</code>, then pull power.</li>
+      <li>Move the card to a USB card reader on this laptop.</li>
+      <li>Use an imaging tool with a <b>read from device</b> function to write a full <code>.img</code>.</li>
+      <li>If Windows offers to format a partition, choose <b>Cancel</b>. Windows cannot read the Linux root partition and will happily destroy it.</li>
+    </ol>
+    <p class="small">If a read error stops the imaging, do not run CHKDSK or any repair. Use <code>ddrescue</code> from a Linux machine instead &mdash; it skips bad sectors and keeps going.</p>
+  </section>
+
+  <section id="swap">
+    <h2>2. Power down and swap</h2>
+    <ol>
+      <li><code>sudo shutdown -h now</code> on the Pi 5, wait for the activity LED to go dark, then disconnect power.</li>
+      <li>Never remove or insert the card with the board powered.</li>
+      <li>Move every jumper and sensor lead across to the Pi 4B, <b>position for position</b>. The 40-pin header is identical on both boards &mdash; physical pin 13 is physical pin 13. Nothing needs rewiring. Pin numbers are in <a href="#pins">section 6</a> if you disturbed anything.</li>
+      <li>Insert the card into the Pi 4B.</li>
+      <li>Leave the light circuit and the PZEM AC side alone. You are not touching mains for this swap.</li>
+    </ol>
+    <div class="callout warning">
+      <strong>Expect the PZEM to fail on the first boot.</strong>
+      That is the UART issue in <a href="#uart">section 5</a>, not a wiring mistake. Lux, temperature and motion should all work immediately.
+    </div>
+  </section>
+
+  <section id="hw">
+    <h2>3. Hardware differences to expect</h2>
+    <div class="grid">
+      <div class="tile"><strong>Power</strong>Pi 4B wants 5&nbsp;V / 3&nbsp;A USB-C. Your existing 5&nbsp;V / 5&nbsp;A Pi 5 supply is fine &mdash; the board simply draws less. The long cable run is still a voltage-drop risk, just a smaller one.</div>
+      <div class="tile"><strong>Cooling</strong>The Pi 5 active cooler does not fit the Pi 4B, and the 4B has no fan header. A heatsink is enough for this workload.</div>
+      <div class="tile"><strong>Network</strong>New MAC address, so DHCP will likely hand out a different IP. <code>192.168.0.45</code> is probably gone.</div>
+      <div class="tile"><strong>Performance</strong>Slower CPU, but this workload is a few sensor reads and a Node-RED flow. Not a concern.</div>
+    </div>
+    <h3>Finding it on the network again</h3>
+    <p>Check the router's DHCP client list for a new <code>Raspberry Pi</code> lease, or from this laptop:</p>
+<pre><code>ping -4 streetlight.local
+arp -a</code></pre>
+    <p class="small">Substitute the hostname you actually set if it is not <code>streetlight</code>. If you had a DHCP reservation pinned to the Pi 5's MAC, update it to the 4B's MAC to keep the address stable.</p>
+  </section>
+
+  <section id="boot">
+    <h2>4. First boot checks</h2>
+    <p>Power up the Pi 4B and SSH in with the same username and key as before &mdash; the authorized keys are on the card, so this should not prompt for a password.</p>
+<pre><code>cat /proc/device-tree/model; echo
+hostname -I
+vcgencmd get_throttled
+vcgencmd measure_temp
+systemctl --failed</code></pre>
+    <p>Expected: <code>Raspberry Pi 4 Model B Rev 1.x</code> and <code>throttled=0x0</code>. Anything other than <code>0x0</code> means power or heat &mdash; deal with it before going further.</p>
+    <h3>Confirm the card came across intact</h3>
+<pre><code>ls -l /home/pi/streetlight_sensors.py /home/pi/sa-key.json
+ls -la /home/pi/.node-red/flows.json
+systemctl is-active mosquitto nodered streetlight-sensors</code></pre>
+    <h3>Look for Pi 5-only entries in the boot config</h3>
+<pre><code>cat /boot/firmware/config.txt</code></pre>
+    <p>Anything inside a <code>[pi5]</code> block is ignored automatically on a Pi 4 &mdash; leave it alone. What to look for is Pi 5-only hardware parameters sitting in an <code>[all]</code> block or at the top of the file, for example <code>dtparam=nvme</code>, <code>dtparam=pciex1</code>, or a <code>dtoverlay=</code> line naming a Pi 5 peripheral. Move those under a <code>[pi5]</code> heading rather than deleting them, so the card still works if it ever goes back.</p>
+    <p>Also check the kernel command line is not stealing the serial port for a login console:</p>
+<pre><code>cat /proc/cmdline</code></pre>
+    <p>If you see <code>console=serial0,115200</code> or <code>console=ttyAMA0</code>, remove just that one token from <code>/boot/firmware/cmdline.txt</code> &mdash; leave the rest of the line exactly as it is, and keep it a single line.</p>
+  </section>
+
+  <section id="uart">
+    <h2>5. The one required change: give the real UART to the header <span class="pill must">mandatory</span></h2>
+    <div class="callout danger">
+      <strong>Why this breaks and nothing else does.</strong>
+      <code>streetlight_sensors.py</code> opens the PZEM on a hardcoded <code>/dev/ttyAMA0</code>. On the <b>Pi 5</b> that name is the GPIO&nbsp;14/15 UART, so it just worked. On a <b>stock Pi 4B</b> the naming is different: <code>ttyAMA0</code> is the full PL011 and it is wired to the <b>Bluetooth</b> chip, while GPIO&nbsp;14/15 only gets the cut-down mini-UART as <code>ttyS0</code>. Left alone, the script opens the Bluetooth modem and every PZEM read times out.
+    </div>
+    <p>Edit the boot config:</p>
+<pre><code>sudo nano /boot/firmware/config.txt</code></pre>
+    <p>Add this at the end:</p>
+<pre><code>[pi4]
+enable_uart=1
+dtoverlay=disable-bt
+
+[all]</code></pre>
+    <p>The <code>[pi4]</code> filter keeps these settings from applying if the card ever goes back into a Pi 5. The trailing <code>[all]</code> reopens the global scope so anything you add later is not silently swallowed by the <code>[pi4]</code> block.</p>
+    <p>Then stop the Bluetooth service that claims the port at boot, make sure your user can open serial devices, and reboot:</p>
+<pre><code>sudo systemctl disable --now hciuart
+sudo usermod -aG dialout pi
+sudo reboot</code></pre>
+    <div class="callout">
+      <strong>If you need Bluetooth on this Pi</strong>
+      Use <code>dtoverlay=miniuart-bt</code> instead of <code>disable-bt</code>. That pushes Bluetooth onto the mini-UART and still hands the PL011 to the header, so <code>ttyAMA0</code> ends up where you want it. It is slightly less reliable for Bluetooth, and this project does not use Bluetooth at all &mdash; so prefer <code>disable-bt</code> unless something changed.
+    </div>
+    <h3>Verify after the reboot</h3>
+<pre><code>ls -l /dev/serial0 /dev/ttyAMA0
+groups pi
+cat /proc/cmdline</code></pre>
+    <ul>
+      <li><code>/dev/serial0</code> is a symlink and must point at <code>ttyAMA0</code>. If it points at <code>ttyS0</code>, the overlay did not take.</li>
+      <li><code>pi</code> appears in the group list. Group changes need a fresh login, which the reboot gave you.</li>
+      <li><code>/proc/cmdline</code> has no <code>console=serial0</code> or <code>console=ttyAMA0</code> token.</li>
+    </ul>
+    <p class="small">No change to <code>streetlight_sensors.py</code> is needed once these three pass. The script's <code>/dev/ttyAMA0</code>, slave address <code>1</code> and <code>9600</code> baud all stay as they are.</p>
+  </section>
+
+  <section id="pins">
+    <h2>6. Sensor pinout</h2>
+    <p>Identical on Pi 4B and Pi 5 &mdash; same 40-pin header, same BCM numbering, same physical positions. This is here as a reference for re-seating a lead you disturbed, not as a rewiring instruction.</p>
+
+    <figure class="fig">
+      <div class="fig-scroll">
+        <svg viewBox="0 0 720 676" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Raspberry Pi 40-pin header diagram with the pins used by this project highlighted: pin 1 and 17 3V3, pins 2 and 4 5V, pin 3 SDA, pin 5 SCL, pin 6 and other ground pins, pin 8 GPIO14 TXD, pin 10 GPIO15 RXD, pin 13 GPIO27.">
+          <g class="sv-row">
+            <rect x="0" y="45" width="720" height="26" rx="5"/>
+            <rect x="0" y="76" width="720" height="26" rx="5"/>
+            <rect x="0" y="107" width="720" height="26" rx="5"/>
+            <rect x="0" y="138" width="720" height="26" rx="5"/>
+            <rect x="0" y="169" width="720" height="26" rx="5"/>
+            <rect x="0" y="231" width="720" height="26" rx="5"/>
+            <rect x="0" y="293" width="720" height="26" rx="5"/>
+          </g>
+
+          <rect class="sv-board" x="305" y="32" width="110" height="612" rx="8"/>
+          <rect x="308" y="35" width="7" height="7" rx="1.5" fill="var(--sv-edge)"/>
+          <text class="sv-cap" x="300" y="22" text-anchor="end">INNER ROW &middot; ODD</text>
+          <text class="sv-cap" x="420" y="22" text-anchor="start">OUTER ROW &middot; EVEN</text>
+
+          <!-- row 1: pins 1 / 2 -->
+          <rect class="sv-pad sv-3v3" x="320" y="47" width="26" height="22" rx="4"/>
+          <text class="sv-num" x="333" y="62" text-anchor="middle">1</text>
+          <text class="sv-t" x="300" y="62" text-anchor="end">3V3</text>
+          <text class="sv-note" x="188" y="62" text-anchor="end">BH1750 + BME280 VCC</text>
+          <rect class="sv-pad sv-5v" x="374" y="47" width="26" height="22" rx="4"/>
+          <text class="sv-num" x="387" y="62" text-anchor="middle">2</text>
+          <text class="sv-t" x="422" y="62">5V</text>
+          <text class="sv-note" x="532" y="62">PIR VCC &middot; PZEM 5V</text>
+
+          <!-- row 2: pins 3 / 4 -->
+          <rect class="sv-pad sv-i2c" x="320" y="78" width="26" height="22" rx="4"/>
+          <text class="sv-num" x="333" y="93" text-anchor="middle">3</text>
+          <text class="sv-t" x="300" y="93" text-anchor="end">GPIO2 SDA1</text>
+          <text class="sv-note" x="188" y="93" text-anchor="end">BH1750 + BME280 SDA</text>
+          <rect class="sv-pad sv-5v" x="374" y="78" width="26" height="22" rx="4"/>
+          <text class="sv-num" x="387" y="93" text-anchor="middle">4</text>
+          <text class="sv-t" x="422" y="93">5V</text>
+          <text class="sv-note" x="532" y="93">alternate 5V</text>
+
+          <!-- row 3: pins 5 / 6 -->
+          <rect class="sv-pad sv-i2c2" x="320" y="109" width="26" height="22" rx="4"/>
+          <text class="sv-num" x="333" y="124" text-anchor="middle">5</text>
+          <text class="sv-t" x="300" y="124" text-anchor="end">GPIO3 SCL1</text>
+          <text class="sv-note" x="188" y="124" text-anchor="end">BH1750 + BME280 SCL</text>
+          <rect class="sv-pad sv-gnd" x="374" y="109" width="26" height="22" rx="4"/>
+          <text class="sv-num" x="387" y="124" text-anchor="middle">6</text>
+          <text class="sv-t" x="422" y="124">GND</text>
+          <text class="sv-note" x="532" y="124">common ground</text>
+
+          <!-- row 4: pins 7 / 8 -->
+          <rect class="sv-pad sv-free" x="320" y="140" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="333" y="155" text-anchor="middle">7</text>
+          <text class="sv-t dim" x="300" y="155" text-anchor="end">GPIO4</text>
+          <rect class="sv-pad sv-uart" x="374" y="140" width="26" height="22" rx="4"/>
+          <text class="sv-num" x="387" y="155" text-anchor="middle">8</text>
+          <text class="sv-t" x="422" y="155">GPIO14 TXD</text>
+          <text class="sv-note" x="532" y="155">&rarr; PZEM RX</text>
+
+          <!-- row 5: pins 9 / 10 -->
+          <rect class="sv-pad sv-gnd" x="320" y="171" width="26" height="22" rx="4"/>
+          <text class="sv-num" x="333" y="186" text-anchor="middle">9</text>
+          <text class="sv-t" x="300" y="186" text-anchor="end">GND</text>
+          <rect class="sv-pad sv-uart" x="374" y="171" width="26" height="22" rx="4"/>
+          <text class="sv-num" x="387" y="186" text-anchor="middle">10</text>
+          <text class="sv-t" x="422" y="186">GPIO15 RXD</text>
+          <text class="sv-note" x="532" y="186">&larr; PZEM TX</text>
+
+          <!-- row 6: pins 11 / 12 -->
+          <rect class="sv-pad sv-free" x="320" y="202" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="333" y="217" text-anchor="middle">11</text>
+          <text class="sv-t dim" x="300" y="217" text-anchor="end">GPIO17</text>
+          <rect class="sv-pad sv-free" x="374" y="202" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="387" y="217" text-anchor="middle">12</text>
+          <text class="sv-t dim" x="422" y="217">GPIO18</text>
+
+          <!-- row 7: pins 13 / 14 -->
+          <rect class="sv-pad sv-pir" x="320" y="233" width="26" height="22" rx="4"/>
+          <text class="sv-num" x="333" y="248" text-anchor="middle">13</text>
+          <text class="sv-t" x="300" y="248" text-anchor="end">GPIO27</text>
+          <text class="sv-note" x="188" y="248" text-anchor="end">PIR OUT</text>
+          <rect class="sv-pad sv-gnd" x="374" y="233" width="26" height="22" rx="4"/>
+          <text class="sv-num" x="387" y="248" text-anchor="middle">14</text>
+          <text class="sv-t" x="422" y="248">GND</text>
+
+          <!-- row 8: pins 15 / 16 -->
+          <rect class="sv-pad sv-free" x="320" y="264" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="333" y="279" text-anchor="middle">15</text>
+          <text class="sv-t dim" x="300" y="279" text-anchor="end">GPIO22</text>
+          <rect class="sv-pad sv-free" x="374" y="264" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="387" y="279" text-anchor="middle">16</text>
+          <text class="sv-t dim" x="422" y="279">GPIO23</text>
+
+          <!-- row 9: pins 17 / 18 -->
+          <rect class="sv-pad sv-3v3" x="320" y="295" width="26" height="22" rx="4"/>
+          <text class="sv-num" x="333" y="310" text-anchor="middle">17</text>
+          <text class="sv-t" x="300" y="310" text-anchor="end">3V3</text>
+          <text class="sv-note" x="188" y="310" text-anchor="end">alternate 3V3</text>
+          <rect class="sv-pad sv-free" x="374" y="295" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="387" y="310" text-anchor="middle">18</text>
+          <text class="sv-t dim" x="422" y="310">GPIO24</text>
+
+          <!-- row 10: pins 19 / 20 -->
+          <rect class="sv-pad sv-free" x="320" y="326" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="333" y="341" text-anchor="middle">19</text>
+          <text class="sv-t dim" x="300" y="341" text-anchor="end">GPIO10</text>
+          <rect class="sv-pad sv-gnd" x="374" y="326" width="26" height="22" rx="4"/>
+          <text class="sv-num" x="387" y="341" text-anchor="middle">20</text>
+          <text class="sv-t" x="422" y="341">GND</text>
+
+          <!-- row 11: pins 21 / 22 -->
+          <rect class="sv-pad sv-free" x="320" y="357" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="333" y="372" text-anchor="middle">21</text>
+          <text class="sv-t dim" x="300" y="372" text-anchor="end">GPIO9</text>
+          <rect class="sv-pad sv-free" x="374" y="357" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="387" y="372" text-anchor="middle">22</text>
+          <text class="sv-t dim" x="422" y="372">GPIO25</text>
+
+          <!-- row 12: pins 23 / 24 -->
+          <rect class="sv-pad sv-free" x="320" y="388" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="333" y="403" text-anchor="middle">23</text>
+          <text class="sv-t dim" x="300" y="403" text-anchor="end">GPIO11</text>
+          <rect class="sv-pad sv-free" x="374" y="388" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="387" y="403" text-anchor="middle">24</text>
+          <text class="sv-t dim" x="422" y="403">GPIO8</text>
+
+          <!-- row 13: pins 25 / 26 -->
+          <rect class="sv-pad sv-gnd" x="320" y="419" width="26" height="22" rx="4"/>
+          <text class="sv-num" x="333" y="434" text-anchor="middle">25</text>
+          <text class="sv-t" x="300" y="434" text-anchor="end">GND</text>
+          <rect class="sv-pad sv-free" x="374" y="419" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="387" y="434" text-anchor="middle">26</text>
+          <text class="sv-t dim" x="422" y="434">GPIO7</text>
+
+          <!-- row 14: pins 27 / 28 -->
+          <rect class="sv-pad sv-free" x="320" y="450" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="333" y="465" text-anchor="middle">27</text>
+          <text class="sv-t dim" x="300" y="465" text-anchor="end">GPIO0</text>
+          <rect class="sv-pad sv-free" x="374" y="450" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="387" y="465" text-anchor="middle">28</text>
+          <text class="sv-t dim" x="422" y="465">GPIO1</text>
+
+          <!-- row 15: pins 29 / 30 -->
+          <rect class="sv-pad sv-free" x="320" y="481" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="333" y="496" text-anchor="middle">29</text>
+          <text class="sv-t dim" x="300" y="496" text-anchor="end">GPIO5</text>
+          <rect class="sv-pad sv-gnd" x="374" y="481" width="26" height="22" rx="4"/>
+          <text class="sv-num" x="387" y="496" text-anchor="middle">30</text>
+          <text class="sv-t" x="422" y="496">GND</text>
+
+          <!-- row 16: pins 31 / 32 -->
+          <rect class="sv-pad sv-free" x="320" y="512" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="333" y="527" text-anchor="middle">31</text>
+          <text class="sv-t dim" x="300" y="527" text-anchor="end">GPIO6</text>
+          <rect class="sv-pad sv-free" x="374" y="512" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="387" y="527" text-anchor="middle">32</text>
+          <text class="sv-t dim" x="422" y="527">GPIO12</text>
+
+          <!-- row 17: pins 33 / 34 -->
+          <rect class="sv-pad sv-free" x="320" y="543" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="333" y="558" text-anchor="middle">33</text>
+          <text class="sv-t dim" x="300" y="558" text-anchor="end">GPIO13</text>
+          <rect class="sv-pad sv-gnd" x="374" y="543" width="26" height="22" rx="4"/>
+          <text class="sv-num" x="387" y="558" text-anchor="middle">34</text>
+          <text class="sv-t" x="422" y="558">GND</text>
+
+          <!-- row 18: pins 35 / 36 -->
+          <rect class="sv-pad sv-free" x="320" y="574" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="333" y="589" text-anchor="middle">35</text>
+          <text class="sv-t dim" x="300" y="589" text-anchor="end">GPIO19</text>
+          <rect class="sv-pad sv-free" x="374" y="574" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="387" y="589" text-anchor="middle">36</text>
+          <text class="sv-t dim" x="422" y="589">GPIO16</text>
+
+          <!-- row 19: pins 37 / 38 -->
+          <rect class="sv-pad sv-free" x="320" y="605" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="333" y="620" text-anchor="middle">37</text>
+          <text class="sv-t dim" x="300" y="620" text-anchor="end">GPIO26</text>
+          <rect class="sv-pad sv-free" x="374" y="605" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="387" y="620" text-anchor="middle">38</text>
+          <text class="sv-t dim" x="422" y="620">GPIO20</text>
+
+          <!-- row 20: pins 39 / 40 -->
+          <rect class="sv-pad sv-gnd" x="320" y="636" width="26" height="22" rx="4"/>
+          <text class="sv-num" x="333" y="651" text-anchor="middle">39</text>
+          <text class="sv-t" x="300" y="651" text-anchor="end">GND</text>
+          <rect class="sv-pad sv-free" x="374" y="636" width="26" height="22" rx="4"/>
+          <text class="sv-num free" x="387" y="651" text-anchor="middle">40</text>
+          <text class="sv-t dim" x="422" y="651">GPIO21</text>
+        </svg>
+      </div>
+      <ul class="legend">
+        <li><i style="background:var(--sv-5v)"></i>5&nbsp;V</li>
+        <li><i style="background:var(--sv-3v3)"></i>3.3&nbsp;V</li>
+        <li><i style="background:var(--sv-gnd)"></i>Ground</li>
+        <li><i style="background:var(--sv-i2c)"></i>I&sup2;C SDA</li>
+        <li><i style="background:var(--sv-i2c2)"></i>I&sup2;C SCL</li>
+        <li><i style="background:var(--sv-uart)"></i>UART / PZEM</li>
+        <li><i style="background:var(--sv-pir)"></i>PIR input</li>
+        <li><i style="background:var(--sv-free)"></i>Unused</li>
+      </ul>
+      <figcaption>
+        <b>Orientation:</b> hold the Pi 4B with the 40-pin header along the top edge and the USB ports facing you. <b>Pin 1 is the corner closest to the USB-C power and micro-HDMI connectors</b> &mdash; marked by the small square at the top of the board above. Odd pins (1, 3, 5 &hellip;) run along the inner row, nearer the middle of the board; even pins (2, 4, 6 &hellip;) along the outer row, nearer the board edge. Identical on the Pi 5, so every lead goes back in the same hole.
+      </figcaption>
+    </figure>
+
+    <h3>Signal pins</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Device</th><th>Signal</th><th>BCM</th><th>Physical pin</th><th>Address / config</th></tr></thead>
+        <tbody>
+          <tr><td>PIR HC-SR501</td><td>OUT (digital)</td><td>GPIO27</td><td>13</td><td>Time-Delay pot set to ~10&nbsp;s</td></tr>
+          <tr><td>BH1750</td><td>I&sup2;C SDA</td><td>GPIO2</td><td>3</td><td rowspan="2"><code>0x23</code>, bus 1</td></tr>
+          <tr><td>BH1750</td><td>I&sup2;C SCL</td><td>GPIO3</td><td>5</td></tr>
+          <tr><td>BME280</td><td>I&sup2;C SDA</td><td>GPIO2</td><td>3</td><td rowspan="2"><code>0x76</code>, bus 1 (shared)</td></tr>
+          <tr><td>BME280</td><td>I&sup2;C SCL</td><td>GPIO3</td><td>5</td></tr>
+          <tr><td>PZEM-004T v3</td><td>PZEM TX &rarr; Pi RXD</td><td>GPIO15</td><td>10</td><td rowspan="2">Modbus slave <code>1</code>, 9600&nbsp;8N1</td></tr>
+          <tr><td>PZEM-004T v3</td><td>Pi TXD &rarr; PZEM RX</td><td>GPIO14</td><td>8</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><b>TX and RX cross over.</b> The PZEM's TX goes to the Pi's RX (pin 10); the Pi's TX (pin 8) goes to the PZEM's RX. Two devices both labelled TX on the same wire is the classic reason a PZEM reads nothing.</p>
+
+    <figure class="fig">
+      <div class="fig-scroll">
+        <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="PZEM-004T v3 to Raspberry Pi 4B wiring: PZEM 5V to pin 2, PZEM GND to pin 6, PZEM TX crosses to Pi pin 10 GPIO15 RXD, and Pi pin 8 GPIO14 TXD crosses to PZEM RX.">
+          <defs>
+            <marker id="ah-uart" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto">
+              <path class="sv-ah" d="M0 0 L10 5 L0 10 Z"/>
+            </marker>
+          </defs>
+
+          <text class="sv-cap" x="140" y="24" text-anchor="middle">PZEM-004T V3 &middot; TTL SIDE</text>
+          <text class="sv-cap" x="580" y="24" text-anchor="middle">RASPBERRY PI 4B HEADER</text>
+
+          <rect class="sv-board" x="50" y="36" width="180" height="216" rx="10"/>
+          <rect class="sv-board" x="490" y="36" width="180" height="216" rx="10"/>
+
+          <!-- 5V -->
+          <path class="sv-wire sv-w5v" d="M230 78 L490 78"/>
+          <circle class="sv-5v" cx="230" cy="78" r="5"/>
+          <circle class="sv-5v" cx="490" cy="78" r="5"/>
+          <text class="sv-t" x="216" y="82" text-anchor="end">5V</text>
+          <text class="sv-t" x="504" y="82">Pin 2 &middot; 5V</text>
+
+          <!-- GND -->
+          <path class="sv-wire sv-wgnd" d="M230 128 L490 128"/>
+          <circle class="sv-gnd" cx="230" cy="128" r="5"/>
+          <circle class="sv-gnd" cx="490" cy="128" r="5"/>
+          <text class="sv-t" x="216" y="132" text-anchor="end">GND</text>
+          <text class="sv-t" x="504" y="132">Pin 6 &middot; GND</text>
+
+          <!-- crossed data pair -->
+          <path class="sv-wire sv-wuart" d="M236 178 L478 228" marker-end="url(#ah-uart)"/>
+          <path class="sv-wire sv-wuart" d="M484 178 L242 228" marker-end="url(#ah-uart)"/>
+          <circle class="sv-uart" cx="230" cy="178" r="5"/>
+          <circle class="sv-uart" cx="490" cy="178" r="5"/>
+          <circle class="sv-uart" cx="230" cy="228" r="5"/>
+          <circle class="sv-uart" cx="490" cy="228" r="5"/>
+          <text class="sv-t" x="216" y="182" text-anchor="end">TX</text>
+          <text class="sv-t" x="216" y="232" text-anchor="end">RX</text>
+          <text class="sv-t" x="504" y="182">Pin 8 &middot; GPIO14 TXD</text>
+          <text class="sv-t" x="504" y="232">Pin 10 &middot; GPIO15 RXD</text>
+
+          <text class="sv-warn" x="360" y="278" text-anchor="middle">The two data wires swap ends &mdash; TX always lands on an RX</text>
+        </svg>
+      </div>
+      <figcaption>
+        Power and ground run straight across; the two data wires cross. Arrowheads point the way the bytes travel. If you wire TX&nbsp;&rarr;&nbsp;TX, both sides transmit into each other and <code>read_registers</code> just times out &mdash; which looks exactly like the Bluetooth UART problem from <a href="#uart">section 5</a>, so confirm <code>/dev/serial0</code> first before you start re-seating these two.
+      </figcaption>
+    </figure>
+
+    <figure class="fig">
+      <div class="fig-scroll">
+        <svg viewBox="0 0 720 515" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Two-panel wiring diagram. Panel A: PIR HC-SR501 VCC to pin 2 5V, OUT to pin 13 GPIO27, GND to pin 6 ground. Panel B: I2C bus 1, where BH1750 at address 0x23 and BME280 at address 0x76 both connect their VCC to pin 1 3V3, GND to pin 6 ground, SCL to pin 5 GPIO3, and SDA to pin 3 GPIO2.">
+          <defs>
+            <marker id="ah-pir" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto">
+              <path class="sv-ah-pir" d="M0 0 L10 5 L0 10 Z"/>
+            </marker>
+          </defs>
+
+          <!-- ============ PANEL A : PIR ============ -->
+          <text class="sv-cap" x="20" y="18">A &middot; PIR HC-SR501 &mdash; A PLAIN GPIO INPUT</text>
+          <text class="sv-cap" x="137" y="40" text-anchor="middle">PIR HC-SR501</text>
+          <text class="sv-cap" x="592" y="40" text-anchor="middle">PI 4B HEADER</text>
+          <rect class="sv-board" x="50" y="48" width="175" height="105" rx="10"/>
+          <rect class="sv-board" x="495" y="48" width="195" height="105" rx="10"/>
+
+          <path class="sv-wire sv-w5v"  d="M225 78 L495 78"/>
+          <path class="sv-wire sv-wpir" d="M231 106 L489 106" marker-end="url(#ah-pir)"/>
+          <path class="sv-wire sv-wgnd" d="M225 134 L495 134"/>
+          <text class="sv-note" x="360" y="99" text-anchor="middle">motion HIGH / LOW</text>
+
+          <circle class="sv-5v"  cx="225" cy="78"  r="5"/><circle class="sv-5v"  cx="495" cy="78"  r="5"/>
+          <circle class="sv-pir" cx="225" cy="106" r="5"/><circle class="sv-pir" cx="495" cy="106" r="5"/>
+          <circle class="sv-gnd" cx="225" cy="134" r="5"/><circle class="sv-gnd" cx="495" cy="134" r="5"/>
+
+          <text class="sv-t" x="211" y="82"  text-anchor="end">VCC</text>
+          <text class="sv-t" x="211" y="110" text-anchor="end">OUT</text>
+          <text class="sv-t" x="211" y="138" text-anchor="end">GND</text>
+          <text class="sv-t" x="509" y="82">Pin 2 &middot; 5V</text>
+          <text class="sv-t" x="509" y="110">Pin 13 &middot; GPIO27</text>
+          <text class="sv-t" x="509" y="138">Pin 6 &middot; GND</text>
+
+          <line class="sv-div" x1="20" y1="178" x2="700" y2="178"/>
+
+          <!-- ============ PANEL B : I2C BUS ============ -->
+          <text class="sv-cap" x="20" y="204">B &middot; I&sup2;C BUS 1 &mdash; BOTH SENSORS SHARE ONE PAIR OF PINS</text>
+          <text class="sv-cap" x="137" y="232" text-anchor="middle">PI 4B HEADER</text>
+          <rect class="sv-board" x="50" y="240" width="175" height="142" rx="10"/>
+
+          <!-- four bus rails, level with their header pin -->
+          <path class="sv-wire sv-w3v3"  d="M225 275 L640 275"/>
+          <path class="sv-wire sv-wi2c"  d="M225 305 L640 305"/>
+          <path class="sv-wire sv-wi2c2" d="M225 335 L640 335"/>
+          <path class="sv-wire sv-wgnd"  d="M225 365 L640 365"/>
+
+          <text class="sv-t" x="64" y="279">Pin 1 &middot; 3V3</text>
+          <text class="sv-t" x="64" y="309">Pin 3 &middot; GPIO2 SDA</text>
+          <text class="sv-t" x="64" y="339">Pin 5 &middot; GPIO3 SCL</text>
+          <text class="sv-t" x="64" y="369">Pin 6 &middot; GND</text>
+          <text class="sv-t dim" x="648" y="279">3V3</text>
+          <text class="sv-t dim" x="648" y="309">SDA</text>
+          <text class="sv-t dim" x="648" y="339">SCL</text>
+          <text class="sv-t dim" x="648" y="369">GND</text>
+
+          <!-- BH1750 taps -->
+          <path class="sv-wire sv-w3v3"  d="M290 430 L290 275"/>
+          <path class="sv-wire sv-wgnd"  d="M320 430 L320 365"/>
+          <path class="sv-wire sv-wi2c2" d="M350 430 L350 335"/>
+          <path class="sv-wire sv-wi2c"  d="M380 430 L380 305"/>
+          <!-- BME280 taps -->
+          <path class="sv-wire sv-w3v3"  d="M500 430 L500 275"/>
+          <path class="sv-wire sv-wgnd"  d="M530 430 L530 365"/>
+          <path class="sv-wire sv-wi2c2" d="M560 430 L560 335"/>
+          <path class="sv-wire sv-wi2c"  d="M590 430 L590 305"/>
+
+          <!-- header-side junctions -->
+          <circle class="sv-3v3" cx="225" cy="275" r="5"/>
+          <circle class="sv-i2c" cx="225" cy="305" r="5"/>
+          <circle class="sv-i2c2" cx="225" cy="335" r="5"/>
+          <circle class="sv-gnd" cx="225" cy="365" r="5"/>
+          <!-- BH1750 junctions -->
+          <circle class="sv-3v3" cx="290" cy="275" r="5"/>
+          <circle class="sv-gnd" cx="320" cy="365" r="5"/>
+          <circle class="sv-i2c2" cx="350" cy="335" r="5"/>
+          <circle class="sv-i2c" cx="380" cy="305" r="5"/>
+          <!-- BME280 junctions -->
+          <circle class="sv-3v3" cx="500" cy="275" r="5"/>
+          <circle class="sv-gnd" cx="530" cy="365" r="5"/>
+          <circle class="sv-i2c2" cx="560" cy="335" r="5"/>
+          <circle class="sv-i2c" cx="590" cy="305" r="5"/>
+
+          <rect class="sv-board" x="270" y="430" width="150" height="48" rx="10"/>
+          <rect class="sv-board" x="480" y="430" width="150" height="48" rx="10"/>
+          <text class="sv-t" x="290" y="449" text-anchor="middle">VCC</text>
+          <text class="sv-t" x="320" y="449" text-anchor="middle">GND</text>
+          <text class="sv-t" x="350" y="449" text-anchor="middle">SCL</text>
+          <text class="sv-t" x="380" y="449" text-anchor="middle">SDA</text>
+          <text class="sv-cap" x="345" y="470" text-anchor="middle">BH1750 &middot; 0x23</text>
+          <text class="sv-t" x="500" y="449" text-anchor="middle">VCC</text>
+          <text class="sv-t" x="530" y="449" text-anchor="middle">GND</text>
+          <text class="sv-t" x="560" y="449" text-anchor="middle">SCL</text>
+          <text class="sv-t" x="590" y="449" text-anchor="middle">SDA</text>
+          <text class="sv-cap" x="555" y="470" text-anchor="middle">BME280 &middot; 0x76</text>
+
+          <text class="sv-t dim" x="20" y="503">A filled dot is a joint. Wires that only cross are not connected.</text>
+        </svg>
+      </div>
+      <figcaption>
+        <b>Panel A</b> is point-to-point &mdash; three wires, nothing shared, and the arrow is the only signal: GPIO27 reads the PIR's output. <b>Panel B</b> is a bus: both sensors sit on the <i>same</i> two pins (3 and 5) and are told apart purely by I&sup2;C address, which is why <code>i2cdetect -y 1</code> has to show <code>23</code> and <code>76</code> together. The pin order shown left-to-right on each module (VCC, GND, SCL, SDA) is the usual breakout silkscreen order &mdash; check yours before you trust it. Leave the BH1750's <code>ADDR</code> pin unconnected to keep it at <code>0x23</code>; the BME280 sits at <code>0x76</code>. No external pull-up resistors are needed: GPIO2 and GPIO3 have fixed 1.8&nbsp;k&Omega; pull-ups on the board, and most breakouts add their own.
+      </figcaption>
+    </figure>
+
+    <h3>Power and ground pins</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Device</th><th>Rail</th><th>Physical pin</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td>PIR HC-SR501</td><td>VCC 5&nbsp;V</td><td>2 or 4</td><td>Module takes 4.5&ndash;20&nbsp;V; its OUT swings 3.3&nbsp;V, safe for GPIO27.</td></tr>
+          <tr><td>BH1750</td><td>VCC 3.3&nbsp;V</td><td>1 or 17</td><td>Breakout board, 3.3&nbsp;V part.</td></tr>
+          <tr><td>BME280</td><td>VCC 3.3&nbsp;V</td><td>1 or 17</td><td>Breakout board, 3.3&nbsp;V part.</td></tr>
+          <tr><td>PZEM-004T v3</td><td>5&nbsp;V</td><td>2 or 4</td><td>Powers the serial-side optocouplers only.</td></tr>
+          <tr><td>All of the above</td><td>GND</td><td>6, 9, 14, 20, 25, 30, 34, 39</td><td>Any ground pin; they are all common.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout warning">
+      <strong>Read the power rails off your actual build, not off this table.</strong>
+      The signal pins above come straight out of <code>streetlight_sensors.py</code> and are certain. The <b>power</b> rows are inferred from the usual version of each module &mdash; I have not seen your wiring. Before re-seating a VCC lead, check the label silkscreened on the module and trace where that lead currently goes. Putting 5&nbsp;V into a 3.3&nbsp;V breakout kills it instantly.
+    </div>
+    <div class="callout danger">
+      <strong>Required fix before final handover: PZEM TX is out of spec against the Pi's 3.3&nbsp;V UART input</strong>
+      The PZEM-004T v3's TTL TX idles at 5&nbsp;V, and Pi GPIO inputs are rated 3.3&nbsp;V. It is wired straight to GPIO&nbsp;14/15 (pin 10/RXD) with no protection. This is not a new risk introduced by the board swap &mdash; the Pi 5 was in the same position &mdash; but it should not be carried forward unaddressed into handover: the failure mode isn't reliably minor, it could keep working, fail immediately, or degrade the input over time.
+      <br><br>
+      <b>Fix (cheap, no level-shifter board needed):</b> a simple resistor divider on the PZEM TX &rarr; Pi RX line only:
+      <br><code>PZEM TX &rarr; 1&nbsp;k&Omega; &rarr; (node) &rarr; Pi pin 10 / GPIO15 RXD</code>
+      <br><code>(node) &rarr; 2&nbsp;k&Omega; &rarr; GND</code>
+      <br>This divides 5&nbsp;V down to ~3.3&nbsp;V (5V &times; 2k/(1k+2k) = 3.33V) at the Pi's input. The other direction, <b>Pi pin 8/TXD &rarr; PZEM RX, does not need protection</b> and can stay as a direct wire.
+      <br><br>
+      Skipping this fix is only defensible if a qualified measurement confirms the PZEM TX signal never actually exceeds 3.3&nbsp;V in practice &mdash; and safely taking that measurement requires powered equipment near mains, which is more effort and more risk than just installing the two resistors. Treat this as required hardware work, not an optional nice-to-have.
+    </div>
+    <p>The PZEM's AC measurement terminals carry mains voltage. The meter will not return readings without its AC supply energised, but that side is a qualified-person job and is untouched by a card swap.</p>
+  </section>
+
+  <section id="verify">
+    <h2>7. Verify each sensor</h2>
+    <p>Work up from the individual buses to the full system. Stop the service first so nothing competes for the UART or GPIO27:</p>
+<pre><code>sudo systemctl stop streetlight-sensors.service</code></pre>
+
+    <h3>A. I&sup2;C &mdash; lux and temperature</h3>
+<pre><code>sudo i2cdetect -y 1</code></pre>
+    <p>Both <code>23</code> and <code>76</code> must appear in the grid. If the command itself is missing, <code>sudo apt install -y i2c-tools</code>.</p>
+
+    <h3>B. PZEM on its own</h3>
+<pre><code>python3 - &lt;&lt;'PY'
+import minimalmodbus
+p = minimalmodbus.Instrument('/dev/ttyAMA0', 1)
+p.serial.baudrate = 9600
+p.serial.timeout = 1
+print(p.read_registers(0, 9, functioncode=4))
+PY</code></pre>
+    <p>Nine numbers back means the UART fix worked. A timeout here, with <code>/dev/serial0</code> correctly pointing at <code>ttyAMA0</code>, points at the AC side or the TX/RX crossover instead.</p>
+
+    <h3>C. PIR</h3>
+    <p>Easiest route is to start the service and watch its own output &mdash; it prints <code>Motion: 1</code> / <code>Motion: 0</code> on every transition. Do not run a second GPIO script alongside it; <code>rpi-lgpio</code> lets only one process claim a pin and you will get <code>GPIO busy</code>.</p>
+
+    <h3>D. Everything together</h3>
+<pre><code>sudo systemctl restart mosquitto
+sudo systemctl restart nodered.service
+sudo systemctl restart streetlight-sensors.service
+systemctl --no-pager --full status streetlight-sensors.service</code></pre>
+    <p>Then watch the two live views, one per terminal:</p>
+<pre><code>journalctl -u streetlight-sensors.service -f</code></pre>
+<pre><code>mosquitto_sub -h localhost -t 'streetlight/#' -v</code></pre>
+    <p>All six topics should be moving &mdash; <code>lux</code>, <code>temp</code>, <code>voltage</code>, <code>power</code> and <code>energy</code> every 2&nbsp;s, and <code>motion</code> on each PIR transition.</p>
+
+    <h3>E. Node-RED and GIMS</h3>
+<pre><code>tail -f /home/pi/logs/gims.log</code></pre>
+    <p>Open the editor and dashboard at <code>http://&lt;new-ip&gt;:1880</code> and <code>:1880/ui</code>. Confirm the gauges move, then let the 3-second automation loop send a dim command and check the <code>check status</code> debug output. Telemetry should log HTTP&nbsp;2xx every ~30&nbsp;s.</p>
+    <div class="callout warning">
+      <strong>A 404 in gims.log is a pre-existing open item, not a swap problem.</strong>
+      The telemetry endpoint was deployed server-side on 2026-09-09 but never re-verified from the Pi, and the edge-device UUID in the script has two candidate values on record. See <a href="gims-reference.md">gims-reference.md</a>. Chase that separately, after the board swap is signed off.
+    </div>
+  </section>
+
+  <section id="healthcheck">
+    <h2>8. One Pi 5-ism to check in health_check.sh <span class="pill check">verify</span></h2>
+    <p><a href="health_check.sh">health_check.sh</a> logs the 5&nbsp;V rail using:</p>
+<pre><code>vcgencmd pmic_read_adc | grep EXT5V_V</code></pre>
+    <p>That reads the power-management chip, and which fields it exposes varies by board and revision. Just run it on the 4B:</p>
+<pre><code>vcgencmd pmic_read_adc</code></pre>
+    <p>If <code>EXT5V_V</code> is in the output, nothing to do. If the command errors or that field is absent, the script keeps running but <code>power.log</code> records an empty <code>EXT5V=</code> every 5 minutes. Either drop those two lines, or point them at whichever 5&nbsp;V field your board does report. <code>vcgencmd get_throttled</code> works on both boards and is the line that actually catches undervoltage &mdash; keep that one either way.</p>
+    <p class="small">Nothing else in the monitoring setup is board-specific. The cron entry, the log paths and <a href="logrotate-streetlight.conf">logrotate</a> all ride along on the card.</p>
+  </section>
+
+  <section id="unchanged">
+    <h2>9. What stays unchanged</h2>
+    <div class="grid">
+      <div class="tile"><strong>GPIO library<span class="pill none">no change</span></strong><code>rpi-lgpio</code> provides <code>RPi.GPIO</code> on Bookworm and works the same on Pi 4B. Same single-process pin claim, same <code>GPIO busy</code> behaviour if you run a second script.</div>
+      <div class="tile"><strong>Python packages<span class="pill none">no change</span></strong><code>paho-mqtt</code>, <code>smbus2</code>, <code>RPi.bme280</code>, <code>minimalmodbus</code>, <code>google-auth</code>, <code>requests</code> &mdash; all fine on both boards. Nothing to reinstall.</div>
+      <div class="tile"><strong>Services<span class="pill none">no change</span></strong>Mosquitto, Node-RED and <a href="streetlight-sensors.service">streetlight-sensors.service</a> come across enabled and configured.</div>
+      <div class="tile"><strong>GIMS<span class="pill none">no change</span></strong>Base URL, tenant ID, edge-device UUID, light UUID and <code>sa-key.json</code> are not tied to the board. Same device from the server's point of view. No server-side work.</div>
+    </div>
+    <ul>
+      <li>MQTT broker <code>localhost:1883</code>, topics under <code>streetlight/1/#</code></li>
+      <li>PIR on GPIO27, BH1750 at <code>0x23</code>, BME280 at <code>0x76</code>, PZEM slave 1 at 9600 baud</li>
+      <li>Node-RED flows, dashboard and the dim-command logic</li>
+      <li>SSH keys, hostname and user accounts</li>
+      <li>Log paths under <code>/home/pi/logs/</code> and the 5-minute health-check cron</li>
+    </ul>
+    <div class="callout">
+      <strong>Do not fix the dimming logic during this swap.</strong>
+      There is a known conflict on record: <a href="03_smart_streetlight_system.html">the system document</a> describes 10/40-lux thresholds with 100/50/30/10 levels, while <a href="node-red-function-code.md">the saved function code</a> uses 50/100-lux thresholds with 100/70/45/10 levels and a 20-second motion window. Also, the Python script publishes motion only on a PIR state <i>change</i>, so a continuous HIGH never refreshes Node-RED's timestamp. All real, all worth resolving &mdash; but as a separate change, once the 4B is proven to behave exactly as the Pi 5 did. Changing two things at once means you cannot tell which one caused the difference.
+    </div>
+  </section>
+
+  <section id="trouble">
+    <h2>10. Troubleshooting</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Symptom</th><th>Check in this order</th></tr></thead>
+        <tbody>
+          <tr><td>No boot at all, no green LED activity</td><td>Power supply and cable; card fully seated; try the card in a reader to confirm it is still readable; Pi 5-only parameters in an <code>[all]</code> block in <code>config.txt</code>; then write your backup image to a fresh card.</td></tr>
+          <tr><td>Boots, then freezes or reboots at random</td><td>This is the SD read-failure signature from the project history. <code>journalctl -b -1 -e</code> for the previous boot, <code>dmesg | grep -i mmc</code> for card errors, <code>vcgencmd get_throttled</code> for power. If the card is the culprit, write your image to a new card &mdash; or move to USB-SSD boot, which the 4B supports.</td></tr>
+          <tr><td>PZEM read failed / timeout</td><td><code>/dev/serial0</code> resolving to <code>ttyAMA0</code>; <code>disable-bt</code> present and <code>hciuart</code> disabled; no <code>console=serial0</code> in <code>/proc/cmdline</code>; <code>pi</code> in <code>dialout</code>; TX/RX crossed; PZEM 5&nbsp;V and GND; AC side energised; Modbus address still 1.</td></tr>
+          <tr><td>PZEM read failed <i>and</i> <code>/dev/serial0</code> points at <code>ttyS0</code></td><td>The overlay did not apply. Confirm you edited <code>/boot/firmware/config.txt</code> and not the older <code>/boot/config.txt</code> path, that the line sits under <code>[pi4]</code> or <code>[all]</code>, and that you rebooted rather than just restarting the service.</td></tr>
+          <tr><td>I&sup2;C devices missing from <code>i2cdetect</code></td><td>I&sup2;C enabled in <code>raspi-config</code> &rarr; Interface Options; SDA/SCL not swapped; common ground; correct VCC rail per module; both <code>23</code> and <code>76</code> expected.</td></tr>
+          <tr><td>Only one I&sup2;C device shows up</td><td>They share bus 1, so a bus fault takes out both &mdash; one missing means that module, its wiring, or its address pin. Both sensors have independent retry logic in the script, so the other keeps working meanwhile.</td></tr>
+          <tr><td><code>GPIO busy</code> / <code>lgpio.error</code></td><td><code>sudo systemctl stop streetlight-sensors.service</code> before any standalone GPIO script. Or skip the script and read <code>journalctl -u streetlight-sensors.service -f</code>, which already prints motion transitions.</td></tr>
+          <tr><td>Cannot find the Pi on the network</td><td>New MAC means a new DHCP lease. Router client list; <code>ping -4 &lt;hostname&gt;.local</code>; update any DHCP reservation to the 4B's MAC; if WiFi, confirm the credentials on the card still match the pole's network.</td></tr>
+          <tr><td>Node-RED editor loads but the flow is empty</td><td><code>ls -la /home/pi/.node-red/</code>; the <code>flowFile</code> setting in <code>settings.js</code>; the user Node-RED runs as. If <code>flows.json</code> is genuinely gone, rebuild from <a href="node-red-function-code.md">node-red-function-code.md</a>.</td></tr>
+          <tr><td>SSH asks for a password</td><td>You are probably on a different IP than you think &mdash; confirm you reached the Pi and not another host. The keys live on the card and came across with it.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="rollback">
+    <h2>11. Rollback</h2>
+    <p>Cheap, as long as you keep the Pi 5 intact. The only persistent change this guide makes is the <code>[pi4]</code> block in <code>config.txt</code>, and the board filter means a Pi 5 ignores it &mdash; so the card boots back on the Pi 5 with no edits to undo.</p>
+    <ol>
+      <li>Power down, move the card back to the Pi 5, move the sensor leads back position for position.</li>
+      <li>If you removed a <code>console=serial0</code> token from <code>cmdline.txt</code>, that is harmless on the Pi 5 too. Leave it out.</li>
+      <li>If you disabled <code>hciuart</code>, re-enable it only if you want Bluetooth back: <code>sudo systemctl enable --now hciuart</code>.</li>
+    </ol>
+    <p class="small">Keep the Pi 5 and the original backup image until the 4B has run clean for a few days.</p>
+  </section>
+
+  <section id="checklist">
+    <h2>12. Checklist</h2>
+    <ul class="checklist">
+      <li><code>flows.json</code>, <code>settings.js</code> and <code>sa-key.json</code> copied off the Pi, or a full card image taken</li>
+      <li>Pi 5 shut down cleanly before the card came out</li>
+      <li>Sensor leads moved across position for position</li>
+      <li>Pi 4B boots and reports <code>Raspberry Pi 4 Model B</code></li>
+      <li><code>vcgencmd get_throttled</code> returns <code>throttled=0x0</code></li>
+      <li>New IP found and noted; DHCP reservation updated if you use one</li>
+      <li>SSH works with the existing key, no password prompt</li>
+      <li><code>streetlight_sensors.py</code>, <code>sa-key.json</code> and <code>.node-red/flows.json</code> all present</li>
+      <li>No Pi 5-only parameters left in an <code>[all]</code> block in <code>config.txt</code></li>
+      <li><code>[pi4] enable_uart=1</code> + <code>dtoverlay=disable-bt</code> added, <code>hciuart</code> disabled, rebooted</li>
+      <li><code>/dev/serial0</code> resolves to <code>ttyAMA0</code>; no <code>console=serial0</code> in <code>/proc/cmdline</code></li>
+      <li><code>pi</code> is in the <code>dialout</code> group</li>
+      <li><code>i2cdetect -y 1</code> shows both <code>23</code> and <code>76</code></li>
+      <li>Standalone PZEM test returns nine registers</li>
+      <li>Mosquitto, Node-RED and the sensor service all active</li>
+      <li>All six MQTT topics updating under <code>streetlight/1/#</code></li>
+      <li>PIR transition appears in the journal, and settles back within ~10&ndash;13&nbsp;s of motion stopping</li>
+      <li>Node-RED dashboard live; a dim command reaches GIMS and <code>check status</code> confirms it</li>
+      <li><code>vcgencmd pmic_read_adc</code> checked for <code>EXT5V_V</code>; <code>health_check.sh</code> adjusted if absent</li>
+      <li><code>gims.log</code> outcome recorded &mdash; 2xx, or the pre-existing 404 noted as a separate open item</li>
+      <li>Pi 5 and backup image retained until the 4B has been stable for several days</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>References</h2>
+    <ul>
+      <li><a href="https://www.raspberrypi.com/documentation/computers/configuration.html#configure-uarts">Raspberry Pi docs &mdash; UART configuration and the Bluetooth/PL011 sharing on Pi 4</a></li>
+      <li><a href="https://www.raspberrypi.com/documentation/computers/config_txt.html#conditional-filters">Raspberry Pi docs &mdash; <code>config.txt</code> conditional filters such as <code>[pi4]</code></a></li>
+      <li><a href="https://github.com/mandulaj/PZEM-004T-v30/blob/master/README.md">PZEM-004T v3 communication and register reference</a></li>
+      <li>In this folder: <a href="hardware-pinout-reference.md">hardware-pinout-reference.md</a> &middot; <a href="conclusion.html">conclusion.html</a> &middot; <a href="gims-reference.md">gims-reference.md</a> &middot; <a href="mosquitto-mqtt-reference.md">mosquitto-mqtt-reference.md</a></li>
+    </ul>
+  </section>
+
+</main>
+
+<footer>
+  Written 2026-09-17 for the straight SD-card swap route. Signal pins and serial settings are taken from <code>streetlight_sensors.py</code>; power-rail pins are inferred from the standard version of each module and must be checked against the actual wiring before re-seating a VCC lead.
+</footer>
+</body>
+</html>
