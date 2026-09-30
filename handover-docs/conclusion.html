@@ -43,7 +43,7 @@
   <h1>Smart Streetlight Project — Handover</h1>
   <div class="meta">Written 2026-09-18, last updated 2026-09-24 · internship concluding soon · handing over to supervisor · covers work from 2026-08-28 to 2026-09-24</div>
   <div class="card" style="border-left: 4px solid var(--accent);">
-    <p style="margin:0;">This is a handover document — everything needed to pick up this project: how the system works, how to reach the Pi, current status, and things to watch out for. All reference files it links to are in this same folder.</p>
+    <p style="margin:0;">This is a handover document — everything needed to pick up this project: how the system works, how to reach the Pi, current status, and things to watch out for. All reference files it links to are in this same folder, and the whole project (code + this doc set) is also on GitHub — see the Quick Reference table below.</p>
   </div>
 
   <h2>Quick reference</h2>
@@ -51,6 +51,7 @@
     <table>
       <tr><th>Node-RED editor</th><td><a href="http://raspberrypi.local:1880/">http://raspberrypi.local:1880/</a> (or <span class="mono">http://192.168.0.127:1880/</span> — IP may change on reboot, prefer the hostname)</td></tr>
       <tr><th>Node-RED dashboard</th><td><a href="http://raspberrypi.local:1880/ui/">http://raspberrypi.local:1880/ui/</a> — the "Light energy" live-sensors dashboard (gauges/chart)</td></tr>
+      <tr><th>GitHub repo</th><td><a href="https://github.com/Ivanlim556/streetlight">github.com/Ivanlim556/streetlight</a> — full code history + this handover doc set (in <span class="mono">handover-docs/</span>). Public repo, so it also contains the Pi password below in cleartext — only someone who can already reach the Pi on its local network could use it, but be aware it's out there.</td></tr>
       <tr><th>SSH to Pi</th><td><span class="mono">ssh pi@raspberrypi.local</span> — key-based auth already set up from this laptop, no password needed. (Old IP <span class="mono">192.168.0.45</span> was the Pi 5; retired after migration.)</td></tr>
       <tr><th>Pi IP address</th><td><span class="mono">192.168.0.127</span> — use if the <span class="mono">raspberrypi.local</span> hostname doesn't resolve. Confirmed current 2026-09-24; may change on reboot since it's DHCP-assigned, prefer the hostname when possible.</td></tr>
       <tr><th>PS</th><td><span class="mono">0123456789</span></td></tr>
